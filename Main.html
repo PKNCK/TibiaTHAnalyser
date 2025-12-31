@@ -225,10 +225,11 @@
   <div class="card" style="margin-top:1rem">
     <h2>Osoby</h2>
     <div class="grid4">
-      <div class="card"><h3>Osoba 1</h3><div class="name-wrap"><label for="n1">Imię/Nick</label><input id="n1" type="text" value="EK" /></div><textarea id="t1" placeholder="Wklej Session data..."></textarea></div>
+      <div class="card"><h3>Osoba 1</h3><div class="name-wrap"><label for="n1">Imię/Nick</label><input id="n1" type="text" value="EK" /></div><textarea id="t1" placeholder="Wklej dane..."></textarea></div>
       <div class="card"><h3>Osoba 2</h3><div class="name-wrap"><label for="n2">Imię/Nick</label><input id="n2" type="text" value="RP" /></div><textarea id="t2" placeholder="Wklej dane..."></textarea></div>
       <div class="card"><h3>Osoba 3</h3><div class="name-wrap"><label for="n3">Imię/Nick</label><input id="n3" type="text" value="MS" /></div><textarea id="t3" placeholder="Wklej dane..."></textarea></div>
       <div class="card"><h3>Osoba 4</h3><div class="name-wrap"><label for="n4">Imię/Nick</label><input id="n4" type="text" value="ED" /></div><textarea id="t4" placeholder="Wklej dane..."></textarea></div>
+      <div class="card"><h3>Osoba 5</h3><div class="name-wrap"><label for="n4">Imię/Nick</label><input id="n4" type="text" value="EM" /></div><textarea id="t5" placeholder="Wklej dane..."></textarea></div>
     </div>
   </div>
 
@@ -1531,23 +1532,29 @@ Zaogun Shoulderplates
     }
 
     /* ====== CLEAR / SUMMARIZE / PARTICIPANTS ====== */
-    function clearFields(){
-      ['t1','t2','t3','t4'].forEach(id=>qs(id).value=''); ['n1','n2','n3','n4'].forEach((id,i)=>qs(id).value=`Osoba ${i+1}`);
-      restoreDefaultsTask(); restoreDefaultsInbu(); qs('sessionRaw').value='';
-      qs('partySummaryCard').style.display='none';
-      remainderPriorityEnabled=false; updateRemaUI();
+    
+	function clearFields(){
+	  ['t1','t2','t3','t4','t5'].forEach(id => qs(id).value = '');
+	  ['n1','n2','n3','n4','n5'].forEach((id,i) => qs(id).value = `Osoba ${i+1}`);
+	  restoreDefaultsTask();
+	  restoreDefaultsInbu();
+	  qs('sessionRaw').value = '';
+	  qs('partySummaryCard').style.display = 'none';
+	  remainderPriorityEnabled = false;
+	  updateRemaUI();
 
-      renderSummaryTable(new Map(),new Map(),new Map(),new Map());
-      ['activeCount','distinctCount','distinctCountFoot','totalQty','taskDistinct','taskTotalQty','inbuDistinct','inbuTotalQty'].forEach(id=>qs(id).textContent='0');
-      ['taskTransfersExpanded','inbuTransfersExpanded','taskRemaByPerson','inbuRemaByPerson','taskRemaAssignedByPerson','inbuRemaAssignedByPerson'].forEach(id=>qs(id).innerHTML='');
-      qs('taskTargetsHead').innerHTML=''; qs('taskTargetsRow').innerHTML='';
-      qs('inbuTargetsHead').innerHTML=''; qs('inbuTargetsRow').innerHTML='';
+	  renderSummaryTable(new Map(), new Map(), new Map(), new Map());
+	  ['activeCount','distinctCount','distinctCountFoot','totalQty','taskDistinct','taskTotalQty','inbuDistinct','inbuTotalQty'].forEach(id => qs(id).textContent = '0');
+	  ['taskTransfersExpanded','inbuTransfersExpanded','taskRemaByPerson','inbuRemaByPerson','taskRemaAssignedByPerson','inbuRemaAssignedByPerson'].forEach(id => qs(id).innerHTML = '');
+	  qs('taskTargetsHead').innerHTML = ''; qs('taskTargetsRow').innerHTML = '';
+	  qs('inbuTargetsHead').innerHTML = ''; qs('inbuTargetsRow').innerHTML = '';
 
-      saveSettingsLocal(); showToast('Wyczyszczono pola','info');
-    }
+	  saveSettingsLocal();
+	  showToast('Wyczyszczono pola','info');
+	}
     function getParticipants(){
-      const names=[(qs('n1').value||'Osoba 1').trim(),(qs('n2').value||'Osoba 2').trim(),(qs('n3').value||'Osoba 3').trim(),(qs('n4').value||'Osoba 4').trim()];
-      const texts=[qs('t1').value,qs('t2').value,qs('t3').value,qs('t4').value];
+      const names=[(qs('n1').value||'Osoba 1').trim(),(qs('n2').value||'Osoba 2').trim(),(qs('n3').value||'Osoba 3').trim(),(qs('n4').value||'Osoba 4').trim()||'Osoba 5').trim()];
+      const texts=[qs('t1').value,qs('t2').value,qs('t3').value,qs('t4').value,qs('t5').value];
       return names.map((name,idx)=>({name,text:texts[idx],idx}));
     }
 
@@ -1905,5 +1912,3 @@ Zaogun Shoulderplates
   </script>
 </body>
 </html>
-
-
