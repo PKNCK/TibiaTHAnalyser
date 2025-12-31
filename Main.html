@@ -1553,7 +1553,7 @@ Zaogun Shoulderplates
 	  showToast('Wyczyszczono pola','info');
 	}
     function getParticipants(){
-      const names=[(qs('n1').value||'Osoba 1').trim(),(qs('n2').value||'Osoba 2').trim(),(qs('n3').value||'Osoba 3').trim(),(qs('n4').value||'Osoba 4').trim()||'Osoba 5').trim()];
+      const names=[(qs('n1').value||'Osoba 1').trim(),(qs('n2').value||'Osoba 2').trim(),(qs('n3').value||'Osoba 3').trim(),(qs('n4').value||'Osoba 4').trim(),(qs('n5').value||'Osoba 5').trim()];
       const texts=[qs('t1').value,qs('t2').value,qs('t3').value,qs('t4').value,qs('t5').value];
       return names.map((name,idx)=>({name,text:texts[idx],idx}));
     }
