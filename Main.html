@@ -1627,18 +1627,71 @@ Zaogun Shoulderplates
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
 
-        const count = Object.keys(customSalePrices).length;
-        if (missingNames.length) {
-          console.warn('Brak ID dla (po normalizeForMatch):', missingNames);
-          showToast(`Utworzono ${count} pozycji; brak ID dla ${missingNames.length}`, 'info');
-        } else {
-          showToast(`Utworzono itemprices.json — pozycje: ${count}`, count > 0 ? 'success' : 'info');
-        }
+
+		const count = Object.keys(customSalePrices).length;
+		if (missingNames.length) {
+		  // Zbuduj mapę norm → ładna etykieta
+		  const normToLabel = buildNormToLabelMap();
+		  const missingLabels = missingNames.map(n => normToLabel.get(n) || n);
+
+		  // Podgląd w toascie (limit, żeby nie zrobić tasiemca)
+		  const PREVIEW_LIMIT = 8;
+		  const preview = missingLabels.slice(0, PREVIEW_LIMIT).join(', ');
+		  const more = missingLabels.length > PREVIEW_LIMIT ? ' …' : '';
+
+		  showToast(
+			`Utworzono ${count} pozycji; brak ID dla ${missingLabels.length}: ${preview}${more}`,
+			'info',
+			4000
+		  );
+
+		  // Debug — pełna lista w konsoli
+		  console.warn('Brak ID dla (etykiety):', missingLabels);
+
+		  // Miły bonus: spróbuj skopiować pełną listę braków do schowka (po jednej na linię)
+		  navigator.clipboard.writeText(missingLabels.join('\n'))
+			.then(() => showToast('Brakujące pozycje skopiowano do schowka ✅', 'success'))
+			.catch(() => {/* brak dostępu do clipboard — pomijamy */});
+		} else {
+		  showToast(`Utworzono itemprices.json — pozycje: ${count}`, count > 0 ? 'success' : 'info');
+		}
       } catch (err) {
         console.error('createItemPricesFile error:', err);
         showToast('Błąd tworzenia itemprices.json', 'error');
       }
     }
+
+	
+	<script>
+	// Zbiera przyjazne etykiety dla normowanych nazw (Task + Inbu) → Map(norm → label)
+	function buildNormToLabelMap() {
+	  const map = new Map();
+
+	  // Task: z textarea (używa istniejącej parseLinesFromTextarea)
+	  ['taskListRashid', 'taskListYasir', 'taskListFlint', 'taskListOther1', 'taskListOther2']
+		.forEach(id => {
+		  try {
+			parseLinesFromTextarea(id).forEach(it => {
+			  if (!map.has(it.norm)) map.set(it.norm, it.label);
+			});
+		  } catch { /* ignore */ }
+		});
+
+	  // Inbu: z INBU_GROUPS (etykiety stałe)
+	  try {
+		INBU_GROUPS.forEach(group => {
+		  group.rows.forEach(row => {
+			row.forEach(label => {
+			  const norm = normalizeForMatch(label);
+			  if (!map.has(norm)) map.set(norm, label);
+			});
+		  });
+		});
+	  } catch { /* ignore */ }
+
+	  return map;
+	}
+	</script>
 
     /* ====== CHECKLIST HELPER ====== */
     function ensureChecklistBuilt(containerId, textareaId, groupKey) {
