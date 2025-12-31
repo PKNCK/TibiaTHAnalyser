@@ -113,16 +113,16 @@
     Wklej „Session data…” do pól poniżej i kliknij <b>Podsumuj loot</b>. Dzielenie obejmuje tylko <b>aktywnych</b>.
     <b>„Rozdziel resztki”</b> włącza/wyłącza priorytetowy przydział reszt (droppers → losowo).
   </p>
-    <button id="exportSettingsBtn" class="secondary" type="button">Eksportuj ustawienia</button>
-    <button id="importSettingsBtn" class="secondary" type="button">Importuj ustawienia</button>
-    <button id="saveSettingsBtn"   class="secondary" type="button">Zapisz</button>
+  <button id="exportSettingsBtn" class="secondary" type="button">Eksportuj ustawienia</button>
+  <button id="importSettingsBtn" class="secondary" type="button">Importuj ustawienia</button>
+  <button id="saveSettingsBtn"   class="secondary" type="button">Zapisz</button>    
+  <button id="createItemPricesBtn" class="secondary" type="button">Utwórz plik do Tibii (itemprices.json)</button>
 
   <!-- ====== TASK LISTA ====== -->
   <div class="card">
     <h2>Task lista (edytowalna)</h2>
-
     <div class="actions">
-		<button id="toggleTaskChecksBtn" class="secondary" type="button">Pokaż checklisty</button>
+      <button id="toggleTaskChecksBtn" class="secondary" type="button">Pokaż checklisty</button>
       <button id="restoreDefaultsTaskBtn" class="secondary" type="button">Przywróć domyślne (Task)</button>
       <input type="file" id="importFile" accept="application/json" style="display:none" />
     </div>
@@ -138,7 +138,7 @@
             <button id="taskRashidSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
             <button id="taskRashidClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
           </div>
-		  <div id="taskListRashidChecks" class="checklist"></div>
+          <div id="taskListRashidChecks" class="checklist"></div>
         </div>
       </div>
 
@@ -152,7 +152,7 @@
             <button id="taskYasirSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
             <button id="taskYasirClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
           </div>
-		  <div id="taskListYasirChecks" class="checklist"></div>
+          <div id="taskListYasirChecks" class="checklist"></div>
         </div>
       </div>
 
@@ -166,7 +166,7 @@
             <button id="taskFlintSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
             <button id="taskFlintClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
           </div>
-		  <div id="taskListFlintChecks" class="checklist"></div>
+          <div id="taskListFlintChecks" class="checklist"></div>
         </div>
       </div>
 
@@ -180,7 +180,7 @@
             <button id="taskOther1SelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
             <button id="taskOther1ClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
           </div>
-		  <div id="taskListOther1Checks" class="checklist"></div>
+          <div id="taskListOther1Checks" class="checklist"></div>
         </div>
       </div>
 
@@ -194,7 +194,7 @@
             <button id="taskOther2SelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
             <button id="taskOther2ClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
           </div>
-		  <div id="taskListOther2Checks" class="checklist"></div>
+          <div id="taskListOther2Checks" class="checklist"></div>
         </div>
       </div>
     </div>
@@ -211,7 +211,7 @@
       <button id="toggleInbuChecksBtn" class="secondary" type="button">Pokaż checklistę Inbu</button>
       <button id="inbuSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
       <button id="inbuClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
-	  <button id="restoreDefaultsInbuBtn" class="secondary" type="button">Przywróć domyślne (Inbu)</button>
+      <button id="restoreDefaultsInbuBtn" class="secondary" type="button">Przywróć domyślne (Inbu)</button>
     </div>
 
     <div id="inbuWrap" class="collapsible">
@@ -393,6 +393,54 @@
     const parseNumber=(s)=>{ if(!s) return 0; const t=s.replace(/[^\d\-]/g,''); const n=parseInt(t,10); return isFinite(n)?n:0; };
     const shuffle=(arr)=>{ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 
+    /* ====== MAPA NAZW → ID ładowana z item_id.json (obok HTML) ====== */
+    let NAME_TO_ID = new Map();
+    let nameToIdLoaded = false;
+
+    async function loadNameToIdFromJsonAdjacent(){
+      try{
+        const url='item_id.json';
+        const resp=await fetch(url,{cache:'no-store'});
+        if(!resp.ok) throw new Error(`HTTP ${resp.status} podczas pobierania ${url}`);
+        const text=await resp.text();
+        const json=JSON.parse(text);
+
+        const map=new Map();
+        if(Array.isArray(json)){
+          // format: [{name,id}, ...]
+          for(const rec of json){
+            if(!rec || typeof rec.name!=='string') continue;
+            const norm=normalizeForMatch(rec.name);
+            const id=Number(rec.id);
+            if(Number.isFinite(id)) map.set(norm,id);
+          }
+        } else if(json && typeof json==='object'){
+          // format: {"name": id, ...}
+          for(const [name,idVal] of Object.entries(json)){
+            if(typeof name!=='string') continue;
+            const norm=normalizeForMatch(name);
+            const id=Number(idVal);
+            if(Number.isFinite(id)) map.set(norm,id);
+          }
+        } else {
+          throw new Error('Nieobsługiwany format JSON (oczekiwano tablicy lub obiektu).');
+        }
+
+        NAME_TO_ID=map;
+        nameToIdLoaded=true;
+        showToast(`Załadowano listę ID: ${NAME_TO_ID.size} pozycji`, NAME_TO_ID.size ? 'success' : 'info');
+      } catch(err){
+        console.error('loadNameToIdFromJsonAdjacent error:', err);
+        showToast('Błąd ładowania item_id.json', 'error');
+        NAME_TO_ID=new Map();
+        nameToIdLoaded=false;
+      }
+    }
+    async function ensureNameToIdReady(){
+      if(nameToIdLoaded) return;
+      await loadNameToIdFromJsonAdjacent();
+    }
+
     /* ====== INBU GRID DANE (6×4) ====== */
     const INBU_GROUPS = [
       { headers: ['Wysysanie życia','Wysysanie many','Zadawanie obrażeń krytycznych','Podniesienie umiejętności władania magią','Podnoszenie udźwigu','Prędkość poruszania się'],
@@ -401,7 +449,7 @@
           ['bloody pincers','silencer claws','sabretooth','broken shamanic staff','little bowl of myrrh','compass'],
           ['piece of dead brain','some grimeleech wings','vexclaw talon','strand of medusa hair','goosebump leather','waspoid wing']
         ]},
-      { headers: ['Obrona przed żywiołem - śmierć','Obrona przed żywiołem - ziemia','Obrona przed żywiołem - energia','Obrona przed żywiołem - ogień','Obrona przed żywiołem - lód','Obrona przed żywiołem - świętość'],
+      { headers: ['Obrona przed żywiołem - śmierć','Obrona przed żywiołem - ziemia','Obrona przed żywiołem - energia','Obrona przed żywiołem - ogień','Obrona przed żywiołem - lód','Obrona przed świętością'],
         rows: [
           ['flask of embalming fluid','piece of swampling wood','wyvern talisman','green dragon leather','winter wolf fur','cultish robe'],
           ['gloom wolf fur','snake skin','crawler head plating','blazing bone','thick fur','cultish mask'],
@@ -643,8 +691,6 @@
       }
       qs('ps_footer').textContent=`${summary.sessionStr} hunt on ${summary.fromIso}`;
     }
-
-    /* ====== KOPIOWANIE PARTY SUMMARY ====== */
     function copyPartyAll(){
       const card=qs('partySummaryCard'); if(card.style.display==='none') return;
 
@@ -862,6 +908,7 @@
         showToast('Skopiowano resztki','success');
       }).catch(()=>showToast('Nie udało się skopiować resztek','error'));
     }
+
     function copyLines(filterType){
       const tbody=document.querySelector('#lootTable tbody'); const lines=[];
       for(const tr of tbody.querySelectorAll('tr')){
@@ -944,6 +991,7 @@
         setChecked('taskListOther2Checks', checked.task_other2 || []);
       }
     }
+
     function saveSettingsLocal(objOptional){
       try{ const data=objOptional||collectSettings(); localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); showToast('Zapisano ustawienia','success'); }
       catch(e){ console.warn('saveSettingsLocal error', e); showToast('Błąd zapisu ustawień','error'); }
@@ -970,7 +1018,7 @@
 
     /* ====== DOMYŚLNE LISTY TASK (JEDEN BLOK) ====== */
     const DEFAULT_TASK_RASHID = `
-	Buckle
+    Buckle
 Chaos Mace
 Crystal Crossbow
 Crystal Mace
@@ -1005,7 +1053,7 @@ Vile Axe
 War Axe
 `.trim();
     const DEFAULT_TASK_FLINT  = `
-	Alloy Legs
+    Alloy Legs
 Battle Shield
 Bone Club
 Double Axe
@@ -1023,8 +1071,9 @@ Plate Legs
 Rubber Cap
 Swampling Club
 `.trim();
+
     const DEFAULT_TASK_OTHER1 = `
-	Ancient Stone
+    Ancient Stone
 Angelic Axe
 Badger Boots
 Black Shield
@@ -1432,7 +1481,7 @@ Zaogun Shoulderplates
 
     function restoreDefaultsTask(){
       qs('taskListRashid').value = DEFAULT_TASK_RASHID;
-      qs('taskListYasir' ).value = DEFAULT_TASK_YASIR;   // TODO: uzupełnić pełną listę Yasir (po jednej pozycji na linię)
+      qs('taskListYasir' ).value = DEFAULT_TASK_YASIR;
       qs('taskListFlint' ).value = DEFAULT_TASK_FLINT;
       qs('taskListOther1').value = DEFAULT_TASK_OTHER1;
       qs('taskListOther2').value = DEFAULT_TASK_OTHER2;
@@ -1541,6 +1590,56 @@ Zaogun Shoulderplates
       else { wrap.classList.remove('open'); btn.textContent = 'Pokaż wynik podsumowania'; }
     }
 
+    // ====== GENERUJ itemprices.json (tylko zaznaczone Task + Inbu) ======
+    async function createItemPricesFile() {
+      try {
+        // Wczytaj listę ID z pliku item_id.json obok HTML (jeśli jeszcze nie było wczytane)
+        await ensureNameToIdReady();
+
+        // Zbiory zaznaczonych pozycji (Task + Inbu) — normy (normalizeForMatch)
+        const { unionTaskSet } = readTaskListsChecked();
+        const inbuSet = readInbuListChecked();
+
+        // Unia norm nazw
+        const selectedNorms = new Set([...unionTaskSet, ...inbuSet]);
+
+        const customSalePrices = {};
+        const missingNames = [];
+
+        for (const normName of selectedNorms) {
+          const id = NAME_TO_ID.get(normName);
+          if (!id) { missingNames.push(normName); continue; }
+          customSalePrices[String(id)] = 1;
+        }
+
+        const result = {
+          customSalePrices,
+          primaryLootValueSources: {}
+        };
+
+        // Pobierz jako itemprices.json
+        const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'itemprices.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+
+        const count = Object.keys(customSalePrices).length;
+        if (missingNames.length) {
+          console.warn('Brak ID dla (po normalizeForMatch):', missingNames);
+          showToast(`Utworzono ${count} pozycji; brak ID dla ${missingNames.length}`, 'info');
+        } else {
+          showToast(`Utworzono itemprices.json — pozycje: ${count}`, count > 0 ? 'success' : 'info');
+        }
+      } catch (err) {
+        console.error('createItemPricesFile error:', err);
+        showToast('Błąd tworzenia itemprices.json', 'error');
+      }
+    }
+
     /* ====== CHECKLIST HELPER ====== */
     function ensureChecklistBuilt(containerId, textareaId, groupKey) {
       const cont = qs(containerId);
@@ -1628,6 +1727,9 @@ Zaogun Shoulderplates
         qs('taskListFlint' ).addEventListener('input', ()=>{renderChecklist('taskListFlint','taskListFlintChecks','task_flint'); saveSettingsLocal();});
         qs('taskListOther1').addEventListener('input', ()=>{renderChecklist('taskListOther1','taskListOther1Checks','task_other1'); saveSettingsLocal();});
         qs('taskListOther2').addEventListener('input', ()=>{renderChecklist('taskListOther2','taskListOther2Checks','task_other2'); saveSettingsLocal();});
+
+        // Tworzenie itemprices.json → ładowanie ID na żądanie
+        qs('createItemPricesBtn').addEventListener('click', () => { createItemPricesFile(); });
 
         // Zmiany checkboxów -> auto-save
         ['taskListRashidChecks','taskListYasirChecks','taskListFlintChecks','taskListOther1Checks','taskListOther2Checks','inbuGrid'].forEach(id=>{
@@ -1719,7 +1821,7 @@ Zaogun Shoulderplates
         });
         qs('taskOther2ClearAll').addEventListener('click', () => {
           ensureChecklistBuilt('taskListOther2Checks', 'taskListOther2', 'task_other2');
-          toggleAll('taskListOther2Checks', false);
+          toggleAll('taskOther2Checks', false);
         });
 
         // ——— ZAZNACZ/ODZNACZ WSZYSTKIE (Inbu) ———
@@ -1737,5 +1839,4 @@ Zaogun Shoulderplates
     });
   </script>
 </body>
-
 </html>
