@@ -373,7 +373,7 @@
 
   <!-- ====== STOPKA ====== -->
   <footer id="appFooter" class="small">
-    Autor: PKNCK • Wspomagane przez AI • Lista itemów z:
+    Autor: PKNCK • Lista itemów z:
     <a href="https://tibiopedia.pl" target="_blank" rel="noopener">Tibiopedia</a> •
     Data aktualizacji: <span id="itemsUpdatedAt"></span>
   </footer>
@@ -386,7 +386,7 @@
 
     /* ====== HELPERS ====== */
     const qs=(id)=>document.getElementById(id);
-    const showToast=(msg,type='info',timeout=2500)=>{ const cont=qs('toastContainer'); const div=document.createElement('div'); div.className=`toast ${type}`; div.textContent=msg; cont.appendChild(div); setTimeout(()=>{div.style.transition='opacity 200ms ease';div.style.opacity='0';setTimeout(()=>{if(div.parentNode===cont)cont.removeChild(div);},220);},timeout); };
+    const showToast=(msg,type='info',timeout=2000)=>{ const cont=qs('toastContainer'); const div=document.createElement('div'); div.className=`toast ${type}`; div.textContent=msg; cont.appendChild(div); setTimeout(()=>{div.style.transition='opacity 200ms ease';div.style.opacity='0';setTimeout(()=>{if(div.parentNode===cont)cont.removeChild(div);},220);},timeout); };
     const normalizeForMatch=(name)=>{let s=(name||'').trim().replace(/\s+/g,' '); s=s.replace(/[.,]\s*$/,''); s=s.replace(/^(a|an)\s+/i,''); return s.toLowerCase();};
     const normalizeDisplayName=(name)=>name.replace(/\s+/g,' ').replace(/[.,]\s*$/,'').trim();
     const formatWithCommas=(n)=> (n ?? 0).toLocaleString('en-US');
@@ -403,15 +403,31 @@
         const resp=await fetch(url,{cache:'no-store'});
         if(!resp.ok) throw new Error(`HTTP ${resp.status} podczas pobierania ${url}`);
         const text=await resp.text();
+        const json=JSON.parse(text);
 
-        // spróbuj standardowy JSON
-        let map = tryParseStandardJson(text);
-        // fallback: Twój niestandardowy format {"Name",123,...}
-        if (!map) map = tryParseCustomPairs(text);
-        if (!map) throw new Error('Nie udało się sparsować item_id.json (wspierane: słownik, tablica obiektów, niestandardowe pary).');
+        const map=new Map();
+        if(Array.isArray(json)){
+          // format: [{name,id}, ...]
+          for(const rec of json){
+            if(!rec || typeof rec.name!=='string') continue;
+            const norm=normalizeForMatch(rec.name);
+            const id=Number(rec.id);
+            if(Number.isFinite(id)) map.set(norm,id);
+          }
+        } else if(json && typeof json==='object'){
+          // format: {"name": id, ...}
+          for(const [name,idVal] of Object.entries(json)){
+            if(typeof name!=='string') continue;
+            const norm=normalizeForMatch(name);
+            const id=Number(idVal);
+            if(Number.isFinite(id)) map.set(norm,id);
+          }
+        } else {
+          throw new Error('Nieobsługiwany format JSON (oczekiwano tablicy lub obiektu).');
+        }
 
-        NAME_TO_ID = map;
-        nameToIdLoaded = true;
+        NAME_TO_ID=map;
+        nameToIdLoaded=true;
         showToast(`Załadowano listę ID: ${NAME_TO_ID.size} pozycji`, NAME_TO_ID.size ? 'success' : 'info');
       } catch(err){
         console.error('loadNameToIdFromJsonAdjacent error:', err);
@@ -419,48 +435,6 @@
         NAME_TO_ID=new Map();
         nameToIdLoaded=false;
       }
-    }
-    function tryParseStandardJson(text){
-      try{
-        const json=JSON.parse(text);
-        const map=new Map();
-        if(Array.isArray(json)){
-          for(const rec of json){
-            if(!rec || typeof rec.name!=='string') continue;
-            const norm=normalizeForMatch(rec.name);
-            const id=Number(rec.id);
-            if(Number.isFinite(id)) map.set(norm,id);
-          }
-          return map;
-        } else if(json && typeof json==='object'){
-          for(const [name,idVal] of Object.entries(json)){
-            if(typeof name!=='string') continue;
-            const norm=normalizeForMatch(name);
-            const id=Number(idVal);
-            if(Number.isFinite(id)) map.set(norm,id);
-          }
-          return map;
-        }
-        return null;
-      } catch(e){
-        return null;
-      }
-    }
-    function tryParseCustomPairs(text){
-      // format: { "Name",123, "Name2",456, ... }
-      const inner = text.trim().replace(/^\s*\{\s*/,'').replace(/\s*\}\s*$/,'');
-      const re = /"([^"]+)"\s*,\s*(-?\d+)/g;
-      const map = new Map();
-      let m;
-      while ((m = re.exec(inner)) !== null) {
-        const name = m[1];
-        const id   = Number(m[2]);
-        if (typeof name === 'string' && Number.isFinite(id)) {
-          const norm = normalizeForMatch(name);
-          map.set(norm, id);
-        }
-      }
-      return map.size > 0 ? map : null;
     }
     async function ensureNameToIdReady(){
       if(nameToIdLoaded) return;
@@ -1042,7 +1016,7 @@
       reader.readAsText(file);
     }
 
-    /* ====== DOMYŚLNE LISTY TASK ====== */
+    /* ====== DOMYŚLNE LISTY TASK (JEDEN BLOK) ====== */
     const DEFAULT_TASK_RASHID = `
     Buckle
 Chaos Mace
@@ -1616,28 +1590,6 @@ Zaogun Shoulderplates
       else { wrap.classList.remove('open'); btn.textContent = 'Pokaż wynik podsumowania'; }
     }
 
-    /* ====== Brakujące ID — mapowanie norm → ładne etykiety (Task + Inbu) ====== */
-    function buildNormToLabelMap() {
-      const map = new Map();
-      // Task z textarea
-      ['taskListRashid', 'taskListYasir', 'taskListFlint', 'taskListOther1', 'taskListOther2']
-        .forEach(id => {
-          try { parseLinesFromTextarea(id).forEach(it => { if (!map.has(it.norm)) map.set(it.norm, it.label); }); } catch {}
-        });
-      // Inbu z INBU_GROUPS
-      try {
-        INBU_GROUPS.forEach(group => {
-          group.rows.forEach(row => {
-            row.forEach(label => {
-              const norm = normalizeForMatch(label);
-              if (!map.has(norm)) map.set(norm, label);
-            });
-          });
-        });
-      } catch {}
-      return map;
-    }
-
     // ====== GENERUJ itemprices.json (tylko zaznaczone Task + Inbu) ======
     async function createItemPricesFile() {
       try {
@@ -1675,27 +1627,10 @@ Zaogun Shoulderplates
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
 
-        // Raport + przyjazne etykiety braków + kopiowanie do schowka
         const count = Object.keys(customSalePrices).length;
         if (missingNames.length) {
-          const normToLabel = buildNormToLabelMap();
-          const missingLabels = missingNames.map(n => normToLabel.get(n) || n);
-
-          const PREVIEW_LIMIT = 8;
-          const preview = missingLabels.slice(0, PREVIEW_LIMIT).join(', ');
-          const more = missingLabels.length > PREVIEW_LIMIT ? ' …' : '';
-
-          showToast(
-            `Utworzono ${count} pozycji; brak ID dla ${missingLabels.length}: ${preview}${more}`,
-            'info',
-            4500
-          );
-
-          console.warn('Brak ID dla (etykiety):', missingLabels);
-
-          navigator.clipboard.writeText(missingLabels.join('\n'))
-            .then(() => showToast('Brakujące pozycje skopiowano do schowka ✅', 'success'))
-            .catch(() => {});
+          console.warn('Brak ID dla (po normalizeForMatch):', missingNames);
+          showToast(`Utworzono ${count} pozycji; brak ID dla ${missingNames.length}`, 'info');
         } else {
           showToast(`Utworzono itemprices.json — pozycje: ${count}`, count > 0 ? 'success' : 'info');
         }
@@ -1899,7 +1834,9 @@ Zaogun Shoulderplates
         summarize();
       }catch(err){
         console.error('Init error:', err);
-        showToast('Błąd inicjalizacji.});
+        showToast('Błąd inicjalizacji. Sprawdź konsolę.', 'error');
+      }
+    });
   </script>
 </body>
 </html>
