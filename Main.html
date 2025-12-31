@@ -1536,8 +1536,6 @@ Zaogun Shoulderplates
 	function clearFields(){
 	  ['t1','t2','t3','t4','t5'].forEach(id => qs(id).value = '');
 	  ['n1','n2','n3','n4','n5'].forEach((id,i) => qs(id).value = `Osoba ${i+1}`);
-	  restoreDefaultsTask();
-	  restoreDefaultsInbu();
 	  qs('sessionRaw').value = '';
 	  qs('partySummaryCard').style.display = 'none';
 	  remainderPriorityEnabled = false;
