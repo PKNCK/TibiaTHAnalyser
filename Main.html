@@ -1,0 +1,1740 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Loot Party — Rozdział + Podsumowanie &amp; Listy</title>
+  <style>
+    :root {
+      --bg: #0f1318; --panel: #161b22; --border: #2a2f3a; --text: #e6edf3; --muted: #9aa8b3;
+      --accent: #4db6ff; --accent2: #8bc34a; --warn: #f9a825; --gold: #ffca3a;
+      --error: #ff5252; --info: #4db6ff; --success: #8bc34a;
+    }
+    body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
+    h1 { margin: 0 0 1rem; font-size: 1.5rem; }
+    .desc { color: var(--muted); margin-bottom: 1rem; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem; }
+    .card h2 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--accent); }
+    .name-wrap { display: grid; grid-template-columns: 1fr; gap: 0.35rem; margin-bottom: 0.5rem; }
+    .name-wrap label { font-size: 0.85rem; color: var(--muted); }
+    input[type="text"] { width: 100%; background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.6rem; }
+    textarea { width: 100%; min-height: 140px; resize: vertical; background: #0b0f14; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; font-family: ui-monospace; font-size: 0.9rem; line-height: 1.4; }
+
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0 0.5rem; }
+    button { background: var(--accent); color: #001018; border: none; border-radius: 8px; padding: 0.6rem 1rem; cursor: pointer; font-weight: 600; }
+    button.secondary { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .toggle { background: #243244; color: var(--text); border: 1px solid var(--border); }
+    .toggle.on { background: var(--accent2); color: #0a2401; }
+
+    .result { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem; }
+    .result h2 { margin: 0 0 0.5rem; font-size: 1.1rem; color: var(--accent2); }
+    .small { font-size: 0.85rem; color: var(--muted); }
+    .copy-wrap { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    th, td { border-bottom: 1px solid var(--border); padding: 0.5rem; text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    tfoot td { font-weight: 700; border-top: 2px solid var(--border); }
+
+    .badge { display: inline-block; font-size: 0.75rem; background: #103a17; color: #8ef08e; border: 1px solid #205a2a; padding: 2px 6px; border-radius: 999px; margin-left: 0.35rem; }
+    .badge-inbu { display: inline-block; font-size: 0.75rem; background: #3a2e10; color: #ffef8e; border: 1px solid #5a4620; padding: 2px 6px; border-radius: 999px; margin-left: 0.35rem; }
+    .badge-cat { display: inline-block; font-size: 0.70rem; border: 1px solid var(--border); padding: 2px 6px; border-radius: 999px; margin-left: 0.35rem; color: #e6edf3; }
+    .badge-cat.rashid { background: #3a2410; border-color: #7a4a20; }
+    .badge-cat.yasir  { background: #10283a; border-color: #205a7a; }
+    .badge-cat.flint  { background: #10203a; border-color: #2050aa; }
+    .badge-cat.other1 { background: #103a20; border-color: #208a50; }
+    .badge-cat.other2 { background: #2a2f3a; border-color: #4a505e; }
+
+    /* Gridy */
+    .grid4 { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 1rem; align-items: start; }
+    @media (max-width: 1200px) { .grid4 { grid-template-columns: repeat(3, minmax(240px, 1fr)); } }
+    @media (max-width: 900px)  { .grid4 { grid-template-columns: repeat(2, minmax(240px, 1fr)); } }
+    @media (max-width: 600px)  { .grid4 { grid-template-columns: 1fr; } }
+
+    .task-grid { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 0.75rem; align-items: start; }
+    @media (max-width: 1200px) { .task-grid { grid-template-columns: repeat(4, minmax(220px, 1fr)); } }
+    @media (max-width: 900px)  { .task-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); } }
+    @media (max-width: 700px)  { .task-grid { grid-template-columns: repeat(2, minmax(220px, 1fr)); } }
+    @media (max-width: 500px)  { .task-grid { grid-template-columns: 1fr; } }
+
+    .collapsible { display: none; }
+    .collapsible.open { display: block; }
+
+    /* Inbu grid 6×4 */
+    .inbu-grid { display: grid; grid-template-columns: repeat(6, minmax(170px, 1fr)); gap: 6px; }
+    .inbu-head { font-weight: 700; color: var(--muted); padding: 6px 8px; background: #0b0f14; border: 1px solid var(--border); border-radius: 6px; }
+    .inbu-cell { background: #0b0f14; border: 1px solid var(--border); border-radius: 6px; padding: 6px; }
+    .inbu-item { display: flex; align-items: center; gap: 6px; }
+    .inbu-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent2); }
+
+    /* Party Session 2 kolumny */
+    .party-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+    @media (max-width: 900px) { .party-grid { grid-template-columns: 1fr; } }
+
+    /* Złota kwota */
+    .gp { color: var(--gold); font-weight: 800; }
+
+    /* Scroll-safe sekcje */
+    #taskTransfersExpanded, #inbuTransfersExpanded,
+    #taskRemaByPerson, #inbuRemaByPerson,
+    #taskRemaAssignedByPerson, #inbuRemaAssignedByPerson {
+      max-height: 40vh; overflow-y: auto;
+    }
+    #lootTable tbody { max-height: 40vh; overflow-y: auto; display: block; }
+    #lootTable thead, #lootTable tfoot { display: table; width: 100%; table-layout: fixed; }
+    #lootTable tr { display: table; width: 100%; table-layout: fixed; }
+
+    /* Toasty */
+    .toast-container { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 9999; }
+    .toast { background: #0b0f14; border: 1px solid var(--border); color: var(--text); border-left-width: 4px; padding: 10px 12px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); animation: fadeIn 150ms ease-out; font-size: 0.9rem; }
+    .toast.success { border-left-color: var(--success); }
+    .toast.info    { border-left-color: var(--info); }
+    .toast.error   { border-left-color: var(--error); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Stopka */
+    footer {
+      margin-top: 1rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 0.5rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Loot Party — Rozdział + Podsumowanie &amp; Listy</h1>
+  <p class="desc">
+    Wklej „Session data…” do pól poniżej i kliknij <b>Podsumuj loot</b>. Dzielenie obejmuje tylko <b>aktywnych</b>.
+    <b>„Rozdziel resztki”</b> włącza/wyłącza priorytetowy przydział reszt (droppers → losowo).
+  </p>
+    <button id="exportSettingsBtn" class="secondary" type="button">Eksportuj ustawienia</button>
+    <button id="importSettingsBtn" class="secondary" type="button">Importuj ustawienia</button>
+    <button id="saveSettingsBtn"   class="secondary" type="button">Zapisz</button>
+
+  <!-- ====== TASK LISTA ====== -->
+  <div class="card">
+    <h2>Task lista (edytowalna)</h2>
+
+    <div class="actions">
+		<button id="toggleTaskChecksBtn" class="secondary" type="button">Pokaż checklisty</button>
+      <button id="restoreDefaultsTaskBtn" class="secondary" type="button">Przywróć domyślne (Task)</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" />
+    </div>
+
+    <div class="task-grid">
+      <!-- Rashid -->
+      <div class="card">
+        <h3>Rashid</h3>
+        <textarea id="taskListRashid" placeholder="Jedna pozycja na linię (Rashid)."></textarea>
+        <div id="taskRashidWrap" class="collapsible">
+          <div class="small">Zaznacz, które pozycje uwzględniać w porównaniu.</div>
+          <div class="actions">
+            <button id="taskRashidSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
+            <button id="taskRashidClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
+          </div>
+		  <div id="taskListRashidChecks" class="checklist"></div>
+        </div>
+      </div>
+
+      <!-- Yasir -->
+      <div class="card">
+        <h3>Yasir</h3>
+        <textarea id="taskListYasir" placeholder="Jedna pozycja na linię (Yasir)."></textarea>
+        <div id="taskYasirWrap" class="collapsible">
+          <div class="small">Zaznacz, które pozycje uwzględniać w porównaniu.</div>
+          <div class="actions">
+            <button id="taskYasirSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
+            <button id="taskYasirClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
+          </div>
+		  <div id="taskListYasirChecks" class="checklist"></div>
+        </div>
+      </div>
+
+      <!-- Flint (Rathleton) -->
+      <div class="card">
+        <h3>Flint (Rathleton)</h3>
+        <textarea id="taskListFlint" placeholder="Jedna pozycja na linię (Flint)."></textarea>
+        <div id="taskFlintWrap" class="collapsible">
+          <div class="small">Zaznacz, które pozycje uwzględniać w porównaniu.</div>
+          <div class="actions">
+            <button id="taskFlintSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
+            <button id="taskFlintClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
+          </div>
+		  <div id="taskListFlintChecks" class="checklist"></div>
+        </div>
+      </div>
+
+      <!-- Other 1 -->
+      <div class="card">
+        <h3>Other 1</h3>
+        <textarea id="taskListOther1" placeholder="Jedna pozycja na linię (Other 1)."></textarea>
+        <div id="taskOther1Wrap" class="collapsible">
+          <div class="small">Zaznacz, które pozycje uwzględniać w porównaniu.</div>
+          <div class="actions">
+            <button id="taskOther1SelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
+            <button id="taskOther1ClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
+          </div>
+		  <div id="taskListOther1Checks" class="checklist"></div>
+        </div>
+      </div>
+
+      <!-- Other 2 -->
+      <div class="card">
+        <h3>Other 2</h3>
+        <textarea id="taskListOther2" placeholder="Jedna pozycja na linię (Other 2)."></textarea>
+        <div id="taskOther2Wrap" class="collapsible">
+          <div class="small">Zaznacz, które pozycje uwzględniać w porównaniu.</div>
+          <div class="actions">
+            <button id="taskOther2SelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
+            <button id="taskOther2ClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
+          </div>
+		  <div id="taskListOther2Checks" class="checklist"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="small" style="margin-top:0.5rem">
+      Dopasowanie: <b>case-insensitive</b>, ignoruje w loocie <span class="mono">a/an</span>, usuwa końcowe kropki/przecinki.
+    </div>
+  </div>
+
+  <!-- ====== INBU LISTA (siatka 6×4) ====== -->
+  <div class="card" style="margin-top:1rem">
+    <h2>Inbu lista</h2>
+    <div class="actions">
+      <button id="toggleInbuChecksBtn" class="secondary" type="button">Pokaż checklistę Inbu</button>
+      <button id="inbuSelectAll" class="secondary" type="button">Zaznacz wszystkie</button>
+      <button id="inbuClearAll"  class="secondary" type="button">Odznacz wszystkie</button>
+	  <button id="restoreDefaultsInbuBtn" class="secondary" type="button">Przywróć domyślne (Inbu)</button>
+    </div>
+
+    <div id="inbuWrap" class="collapsible">
+      <div id="inbuGrid" class="inbu-grid"></div>
+    </div>
+
+    <div class="small" style="margin-top:0.5rem">Checkboksy wskazują, które pozycje Inbu uwzględnić przy dopasowaniu do lootu.</div>
+  </div>
+
+  <!-- ====== OSOBY ====== -->
+  <div class="card" style="margin-top:1rem">
+    <h2>Osoby</h2>
+    <div class="grid4">
+      <div class="card"><h3>Osoba 1</h3><div class="name-wrap"><label for="n1">Imię/Nick</label><input id="n1" type="text" value="Osoba 1" /></div><textarea id="t1" placeholder="Wklej Session data..."></textarea></div>
+      <div class="card"><h3>Osoba 2</h3><div class="name-wrap"><label for="n2">Imię/Nick</label><input id="n2" type="text" value="Osoba 2" /></div><textarea id="t2" placeholder="Wklej dane..."></textarea></div>
+      <div class="card"><h3>Osoba 3</h3><div class="name-wrap"><label for="n3">Imię/Nick</label><input id="n3" type="text" value="Osoba 3" /></div><textarea id="t3" placeholder="Wklej dane..."></textarea></div>
+      <div class="card"><h3>Osoba 4</h3><div class="name-wrap"><label for="n4">Imię/Nick</label><input id="n4" type="text" value="Osoba 4" /></div><textarea id="t4" placeholder="Wklej dane..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- ====== PARTY SESSION: 2 kolumny ====== -->
+  <div class="card" style="margin-top:1rem">
+    <h2>Party Session</h2>
+
+    <div class="party-grid">
+      <!-- Lewa kolumna -->
+      <div class="card">
+        <h3 style="margin:0 0 0.5rem">Wklej „Session data”</h3>
+        <textarea id="sessionRaw" placeholder="Wklej: Session data: From ... to ... + sekcje członków"></textarea>
+        <div class="actions">
+          <button id="parseSessionBtn" class="secondary" type="button">Parsuj &amp; Podsumuj party</button>
+        </div>
+      </div>
+
+      <!-- Prawa kolumna (wynik) -->
+      <div class="card" id="partySummaryCard" style="display:none">
+        <h3>Party Hunt Session</h3>
+
+        <div class="party-line"><b>Balance:</b> <span class="gp" id="ps_balance">0</span> gp</div>
+        <div class="party-line"><b>Individual balance:</b> <span class="gp" id="ps_individual">0</span> gp</div>
+        <div class="party-line"><b>Loot per hour:</b> <span class="gp" id="ps_lph">0</span> gp</div>
+
+        <div class="party-flex" style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem; margin-top:0.5rem;">
+          <div class="party-box"><h4>Damage</h4><ul id="ps_damage"></ul></div>
+          <div class="party-box"><h4>Healing</h4><ul id="ps_healing"></ul></div>
+        </div>
+
+        <div class="party-line" style="margin-top:0.5rem"><b>Splitting Instructions</b></div>
+        <div id="ps_split"></div>
+
+        <div class="party-foot mono small" id="ps_footer" style="margin-top:0.5rem"></div>
+
+        <div class="actions" style="margin-top:0.75rem">
+          <button id="copyPartyAllBtn" class="secondary" type="button">Skopiuj cały wynik</button>
+          <button id="copyPartyTransfersBtn" class="secondary" type="button">Skopiuj tylko transfery</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== AKCJE OGÓLNE ====== -->
+  <div class="actions">
+    <button id="sumBtn" type="button">Podsumuj loot</button>
+    <button id="toggleRemaBtn" class="toggle" type="button">Rozdziel resztki: WYŁ.</button>
+    <button id="clearBtn" class="secondary" type="button">Wyczyść pola</button>
+  </div>
+
+  <!-- ====== ROZDZIAŁ ====== -->
+  <div class="result" id="splitPanelFull" style="margin-top:0.5rem">
+    <h2>Rozdział — tylko aktywni</h2>
+    <p class="small">
+      Bazowy udział = <span class="mono">floor(suma / liczba aktywnych)</span>. <br/>
+      <span id="remaModeLabel" class="small warn">Tryb przydziału reszt: WYŁ. — niepodzielne sztuki pokazane poniżej u konkretnych osób.</span>
+    </p>
+
+    <div class="card">
+      <h2>Transfery — Task</h2>
+      <div id="taskTransfersExpanded"></div>
+      <div class="copy-wrap"><button id="copyTaskTransfers" class="secondary" type="button">Skopiuj transfery (task)</button></div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h2>Transfery — Inbu</h2>
+      <div id="inbuTransfersExpanded"></div>
+      <div class="copy-wrap"><button id="copyInbuTransfers" class="secondary" type="button">Skopiuj transfery (inbu)</button></div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h2 id="remaTitle">Resztki (niepodzielne)</h2>
+      <h3 class="small" style="margin:0.25rem 0">Task — niepodzielne (per osoba)</h3>
+      <div id="taskRemaByPerson"></div>
+      <h3 class="small" style="margin:0.5rem 0 0">Inbu — niepodzielne (per osoba)</h3>
+      <div id="inbuRemaByPerson"></div>
+
+      <h3 class="small" style="margin:0.75rem 0 0">Przydział reszt (per osoba; aktywny tylko w trybie WŁ.)</h3>
+      <div id="taskRemaAssignedByPerson"></div>
+      <div id="inbuRemaAssignedByPerson"></div>
+
+      <div class="copy-wrap"><button id="copyRemaBtn" class="secondary" type="button">Skopiuj resztki</button></div>
+    </div>
+  </div>
+
+  <!-- ====== DÓŁ: Wynik podsumowania + Docelowe ilości ====== -->
+  <div id="bottomSummary" style="margin-top:1rem">
+    <div class="actions">
+      <button id="toggleResultSummaryBtn" class="secondary" type="button">Pokaż wynik podsumowania</button>
+    </div>
+
+    <div id="resultSummaryWrap" class="collapsible">
+      <div class="result" id="resultSummary">
+        <h2>Wynik podsumowania</h2>
+        <div class="summary">
+          <div class="box"><h3>Aktywnych osób (z danymi)</h3><div class="value" id="activeCount">0</div></div>
+          <div class="box"><h3>Różnych pozycji w loocie</h3><div class="value" id="distinctCount">0</div></div>
+          <div class="box"><h3>Łączna liczba sztuk (wszystko)</h3><div class="value" id="totalQty">0</div></div>
+          <div class="box"><h3>Na task liście — różnych</h3><div class="value" id="taskDistinct">0</div></div>
+          <div class="box"><h3>Na task liście — łączna ilość sztuk</h3><div class="value" id="taskTotalQty">0</div></div>
+          <div class="box"><h3>Na liście inbu — różnych</h3><div class="value" id="inbuDistinct">0</div></div>
+          <div class="box"><h3>Na liście inbu — łączna ilość sztuk</h3><div class="value" id="inbuTotalQty">0</div></div>
+        </div>
+
+        <div class="legend">W tabeli poniżej: <span class="badge">✓ task</span> i <span class="badge-inbu">★ inbu</span>.</div>
+        <div class="copy-wrap">
+          <button id="copyBtn" class="secondary" type="button">Skopiuj wszystkie</button>
+          <button id="copyTaskBtn" class="secondary" type="button">Skopiuj tylko task</button>
+          <button id="copyInbuBtn" class="secondary" type="button">Skopiuj tylko inbu</button>
+        </div>
+
+        <table id="lootTable">
+          <thead><tr><th>Przedmiot</th><th>Ilość</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><td>Łącznie pozycji (różnych)</td><td id="distinctCountFoot">0</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="result" style="margin-top:1rem">
+      <h2>Docelowe ilości (task) per osoba — po rozdzieleniu</h2>
+      <div class="targets-wrap">
+        <table class="targets-table" id="taskTargetsTable">
+          <thead><tr id="taskTargetsHead"></tr></thead>
+          <tbody><tr id="taskTargetsRow"></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="result" style="margin-top:1rem">
+      <h2>Docelowe ilości (Inbu) per osoba — po rozdzieleniu</h2>
+      <div class="targets-wrap">
+        <table class="targets-table" id="inbuTargetsTable">
+          <thead><tr id="inbuTargetsHead"></tr></thead>
+          <tbody><tr id="inbuTargetsRow"></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ====== STOPKA ====== -->
+  <footer id="appFooter" class="small">
+    Autor: PKNCK • Wspomagane przez AI • Lista itemów z:
+    <a href="https://tibiopedia.pl" target="_blank" rel="noopener">Tibiopedia</a> •
+    Data aktualizacji: <span id="itemsUpdatedAt"></span>
+  </footer>
+
+  <script>
+    'use strict';
+
+    /* ====== STAN ====== */
+    let remainderPriorityEnabled = false;
+
+    /* ====== HELPERS ====== */
+    const qs=(id)=>document.getElementById(id);
+    const showToast=(msg,type='info',timeout=2000)=>{ const cont=qs('toastContainer'); const div=document.createElement('div'); div.className=`toast ${type}`; div.textContent=msg; cont.appendChild(div); setTimeout(()=>{div.style.transition='opacity 200ms ease';div.style.opacity='0';setTimeout(()=>{if(div.parentNode===cont)cont.removeChild(div);},220);},timeout); };
+    const normalizeForMatch=(name)=>{let s=(name||'').trim().replace(/\s+/g,' '); s=s.replace(/[.,]\s*$/,''); s=s.replace(/^(a|an)\s+/i,''); return s.toLowerCase();};
+    const normalizeDisplayName=(name)=>name.replace(/\s+/g,' ').replace(/[.,]\s*$/,'').trim();
+    const formatWithCommas=(n)=> (n ?? 0).toLocaleString('en-US');
+    const parseNumber=(s)=>{ if(!s) return 0; const t=s.replace(/[^\d\-]/g,''); const n=parseInt(t,10); return isFinite(n)?n:0; };
+    const shuffle=(arr)=>{ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+    /* ====== INBU GRID DANE (6×4) ====== */
+    const INBU_GROUPS = [
+      { headers: ['Wysysanie życia','Wysysanie many','Zadawanie obrażeń krytycznych','Podniesienie umiejętności władania magią','Podnoszenie udźwigu','Prędkość poruszania się'],
+        rows: [
+          ['vampire teeth','rope belt','protective charm','elvish talisman','fairy wings','damselfly wing'],
+          ['bloody pincers','silencer claws','sabretooth','broken shamanic staff','little bowl of myrrh','compass'],
+          ['piece of dead brain','some grimeleech wings','vexclaw talon','strand of medusa hair','goosebump leather','waspoid wing']
+        ]},
+      { headers: ['Obrona przed żywiołem - śmierć','Obrona przed żywiołem - ziemia','Obrona przed żywiołem - energia','Obrona przed żywiołem - ogień','Obrona przed żywiołem - lód','Obrona przed żywiołem - świętość'],
+        rows: [
+          ['flask of embalming fluid','piece of swampling wood','wyvern talisman','green dragon leather','winter wolf fur','cultish robe'],
+          ['gloom wolf fur','snake skin','crawler head plating','blazing bone','thick fur','cultish mask'],
+          ['mystical hourglass','brimstone fangs','wyrm scale','draken sulphur','deepling warts','hellspawn tail']
+        ]},
+      { headers: ['Podniesienie umiejętności władania toporem','Podniesienie umiejętności władania obuchem','Podniesienie umiejętności władania mieczem','Podniesienie umiejętności walki wręcz','Podniesienie umiejętności władania bronią dystansową','Podniesienie umiejętności obrony tarczą'],
+        rows: [
+          ['orc tooth','cyclops toe','lions mane','tarantula egg','elven scouting glass','piece of scarab shell'],
+          ['battle stone','ogre nose ring','moohtah shell','mantassin tail','elven hoof','brimstone shell'],
+          ['moohtant horn','warmasters wristguards','war crystal','gold-brocaded cloth','metal spike','frazzle skin']
+        ]},
+      { headers: ['Zadawanie obrażeń od żywiołu - śmierć','Zadawanie obrażeń od żywiołu - ziemia','Zadawanie obrażeń od żywiołu - energia','Zadawanie obrażeń od żywiołu - ogień','Zadawanie obrażeń od żywiołu - lód','Usuwanie efektu paraliżu'],
+        rows: [
+          ['pile of grave earth','swamp grass','rorc feather','fiery heart','frosty heart','wereboar hooves'],
+          ['demonic skeletal hand','poisonous slime','peacock feather fan','green dragon scale','seacrest hair','crystallized anger'],
+          ['petrified scream','slime heart','energy vein','demon horn','polar bear paw','quill']
+        ]}
+    ];
+
+    function renderInbuGrid(checkedKeys=new Set()){
+      const grid=qs('inbuGrid'); grid.innerHTML='';
+      const headRow=(headers)=>headers.forEach(h=>{ const c=document.createElement('div'); c.className='inbu-head'; c.textContent=h; grid.appendChild(c); });
+      const itemRow=(row)=>row.forEach(label=>{
+        const c=document.createElement('div'); c.className='inbu-cell';
+        const wrap=document.createElement('div'); wrap.className='inbu-item';
+        const cb=document.createElement('input'); cb.type='checkbox';
+        const key=`inbu:${normalizeForMatch(label)}`; cb.setAttribute('data-key',key);
+        cb.checked=checkedKeys.has(key) || (!checkedKeys.size);
+        const lbl=document.createElement('label'); lbl.textContent=label;
+        wrap.appendChild(cb); wrap.appendChild(lbl); c.appendChild(wrap); grid.appendChild(c);
+      });
+      INBU_GROUPS.forEach(g=>{ headRow(g.headers); g.rows.forEach(itemRow); });
+    }
+
+    /* ====== LOOT EXTRACTION ====== */
+    function extractLootLines(text){
+      if(!text) return [];
+      const lines=text.split(/\r?\n/);
+      const start=lines.findIndex(l=>/^Looted Items:\s*$/i.test(l.trim()));
+      if(start===-1) return lines.filter(l=>/^\s*\d+\s*x\s+/i.test(l));
+      const out=[]; for(let i=start+1;i<lines.length;i++){const line=lines[i]; if(!line.trim()) break; out.push(line);} return out;
+    }
+
+    /* ====== TASK CHECKLISTS ====== */
+    function parseLinesFromTextarea(textareaId){
+      const raw=qs(textareaId).value||'';
+      return raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(line=>({norm:normalizeForMatch(line),label:line}));
+    }
+    function renderChecklist(textareaId,containerId,groupKey){
+      const cont=qs(containerId); if(!cont) return;
+      const prev=new Map(); for(const cb of cont.querySelectorAll('input[type="checkbox"]')){ const key=cb.getAttribute('data-key'); prev.set(key,cb.checked); }
+      cont.innerHTML='';
+      parseLinesFromTextarea(textareaId).forEach((it,idx)=>{
+        const row=document.createElement('div'); row.className='check-item';
+        const cb=document.createElement('input'); cb.type='checkbox'; const key=`${groupKey}:${it.norm}`;
+        cb.setAttribute('data-key',key); cb.id=`${groupKey}_${idx}`; cb.checked=prev.has(key)?prev.get(key):true;
+        const lbl=document.createElement('label'); lbl.htmlFor=cb.id; lbl.textContent=it.label;
+        row.appendChild(cb); row.appendChild(lbl); cont.appendChild(row);
+      });
+    }
+    function getCheckedSetFrom(containerId){
+      const set=new Set(), cont=qs(containerId); if(!cont) return set;
+      for(const cb of cont.querySelectorAll('input[type="checkbox"]')){ if(cb.checked){ const norm=(cb.getAttribute('data-key')||'').split(':')[1]||''; if(norm) set.add(norm); } }
+      return set;
+    }
+    function readTaskListsChecked(){
+      const rashidSet = getCheckedSetFrom('taskListRashidChecks');
+      const yasirSet  = getCheckedSetFrom('taskListYasirChecks');
+      const flintSet  = getCheckedSetFrom('taskListFlintChecks');
+      const other1Set = getCheckedSetFrom('taskListOther1Checks');
+      const other2Set = getCheckedSetFrom('taskListOther2Checks');
+      const unionTaskSet = new Set([...rashidSet, ...yasirSet, ...flintSet, ...other1Set, ...other2Set]);
+      return { rashidSet, yasirSet, flintSet, other1Set, other2Set, unionTaskSet };
+    }
+    function readInbuListChecked(){
+      const set=new Set(), grid=qs('inbuGrid');
+      for(const cb of grid.querySelectorAll('input[type="checkbox"]')){ if(cb.checked){ const norm=(cb.getAttribute('data-key')||'').split(':')[1]||''; if(norm) set.add(norm); } }
+      return set;
+    }
+
+    /* ====== BUILD ALL ITEMS ====== */
+    function buildAllItems(participants,taskUnionSet,inbuSet,taskCats){
+      const all=new Map();
+      participants.forEach(p=>{
+        extractLootLines(p.text||'').forEach(line=>{
+          const m=line.match(/^\s*(\d+)\s*x\s+(.*)$/i); if(!m) return;
+          const qty=parseInt(m[1],10)||0; const nameDisplay=normalizeDisplayName(m[2]); const norm=normalizeForMatch(nameDisplay);
+          if(!all.has(nameDisplay)){
+            const cats=[];
+            if(taskCats?.rashidSet?.has(norm)) cats.push('rashid');
+            if(taskCats?.yasirSet?.has(norm))  cats.push('yasir');
+            if(taskCats?.flintSet?.has(norm))  cats.push('flint');
+            if(taskCats?.other1Set?.has(norm)) cats.push('other1');
+            if(taskCats?.other2Set?.has(norm)) cats.push('other2');
+            all.set(nameDisplay,{totalQty:0,perPerson:new Map(),flags:{task:taskUnionSet.has(norm),inbu:inbuSet.has(norm),cats}});
+          }
+          const node=all.get(nameDisplay); node.totalQty+=qty; node.perPerson.set(p.idx,(node.perPerson.get(p.idx)||0)+qty);
+        });
+      });
+      return all;
+    }
+
+    /* ====== SETTLE ====== */
+    function settleCategory(allItems,activeParticipants,categoryKey,useRemaPriority){
+      const pairs=new Map(); const remainderAssigned=[]; const unsplitRemaOnly=[]; const targetsPerPerson=new Map();
+      const N=activeParticipants.length; if(N===0) return {pairs,remainderAssigned,unsplitRema:unsplitRemaOnly,targetsPerPerson};
+      activeParticipants.forEach(p=>targetsPerPerson.set(p.name,new Map()));
+      for(const [itemName,data] of allItems.entries()){
+        const isCat=categoryKey==='task'?data.flags.task:data.flags.inbu; if(!isCat) continue;
+        const contrib=new Map(); activeParticipants.forEach(p=>contrib.set(p.idx,data.perPerson.get(p.idx)||0));
+        const total=Array.from(contrib.values()).reduce((a,b)=>a+b,0); if(total===0) continue;
+        const baseShare=Math.floor(total/N); let remainder=total%N;
+        const deltas=activeParticipants.map(p=>({idx:p.idx,name:p.name,delta:(contrib.get(p.idx)||0)-baseShare}));
+        const keepers=new Set();
+        if(useRemaPriority && remainder>0){
+          const surplus=deltas.filter(d=>d.delta>0).sort((a,b)=>b.delta-a.delta);
+          for(const s of surplus){ if(remainder<=0) break; keepers.add(s.idx); remainder--; }
+          if(remainder>0){ const eligible=activeParticipants.filter(p=>!keepers.has(p.idx)).map(p=>p.idx); const order=shuffle(eligible);
+            for(let i=0;i<order.length && remainder>0;i++){ keepers.add(order[i]); remainder--; } }
+          if(keepers.size>0){ remainderAssigned.push({name:itemName,assignedTo:activeParticipants.filter(p=>keepers.has(p.idx)).map(p=>p.name)}); }
+        } else {
+          let rem=total%N;
+          if(rem>0){
+            const holdersAcc=new Map(); const surplus=deltas.filter(d=>d.delta>0).sort((a,b)=>b.delta-a.delta);
+            let i=0; while(rem>0 && surplus.length>0){ const person=surplus[i%surplus.length].name; holdersAcc.set(person,(holdersAcc.get(person)||0)+1); rem--; i++; }
+            if(holdersAcc.size>0) unsplitRemaOnly.push({name:itemName,holders:Array.from(holdersAcc.entries()).map(([person,qty])=>({person,qty}))});
+          }
+        }
+        activeParticipants.forEach(p=>{
+          const t=baseShare + (useRemaPriority && keepers.has(p.idx) ? 1 : 0);
+          targetsPerPerson.get(p.name).set(itemName,t);
+        });
+        const donors=[], receivers=[];
+        activeParticipants.forEach(p=>{
+          const have=contrib.get(p.idx)||0, want=targetsPerPerson.get(p.name).get(itemName)||0, diff=have-want;
+          if(diff>0) donors.push({idx:p.idx,name:p.name,amt:diff}); else if(diff<0) receivers.push({idx:p.idx,name:p.name,amt:-diff});
+        });
+        let di=0,ri=0; while(di<donors.length && ri<receivers.length){
+          const d=donors[di], r=receivers[ri]; const move=Math.min(d.amt,r.amt);
+          if(move>0){ const key=`${d.name}->${r.name}`; const entry=pairs.get(key)||{from:d.name,to:r.name,items:[]}; entry.items.push({name:itemName,qty:move}); pairs.set(key,entry); d.amt-=move; r.amt-=move; }
+          if(d.amt===0) di++; if(r.amt===0) ri++;
+        }
+      }
+      return {pairs,remainderAssigned,unsplitRema:unsplitRemaOnly,targetsPerPerson};
+    }
+
+    /* ====== PARTY SESSION PARSING + RENDER ====== */
+    function parseSessionBlock(raw){
+      if(!raw) return null; const lines=raw.split(/\r?\n/);
+      const header={fromDate:null,fromTime:null,toDate:null,toTime:null,sessionStr:null,lootType:null,loot:0,supplies:0,balance:0};
+      const members=[];
+      for(let i=0;i<lines.length;i++){
+        const line=lines[i].trim(); if(!line) continue; let m;
+        if((m=line.match(/^Session data:\s*From\s*([0-9\-]+),\s*([0-9:]+)\s*to\s*([0-9\-]+),\s*([0-9:]+)/i))){header.fromDate=m[1];header.fromTime=m[2];header.toDate=m[3];header.toTime=m[4];continue;}
+        if((m=line.match(/^Session:\s*([0-9]{2}:[0-9]{2})h/i))){header.sessionStr=m[1];continue;}
+        if((m=line.match(/^Loot Type:\s*(.+)$/i))) {header.lootType=m[1].trim();continue;}
+        if((m=line.match(/^Loot:\s*(.+)$/i)))      {header.loot=parseNumber(m[1]);continue;}
+        if((m=line.match(/^Supplies:\s*(.+)$/i)))  {header.supplies=parseNumber(m[1]);continue;}
+        if((m=line.match(/^Balance:\s*(.+)$/i)))   {header.balance=parseNumber(m[1]);continue;}
+        if(!line.match(/^(Loot|Supplies|Balance|Damage|Healing):/i)){
+          const nameLine=line.replace(/\s*\(Leader\)\s*$/i,'').trim();
+          const person={name:nameLine,loot:0,supplies:0,balance:0,damage:0,healing:0};
+          let j=i+1;
+          while(j<lines.length){
+            const l2=lines[j].trim(); if(!l2){j++;continue;}
+            if(!l2.match(/^(Loot|Supplies|Balance|Damage|Healing):/i)) break;
+            let mm;
+            if((mm=l2.match(/^Loot:\s*(.+)$/i)))     person.loot   = parseNumber(mm[1]);
+            else if((mm=l2.match(/^Supplies:\s*(.+)$/i))) person.supplies = parseNumber(mm[1]);
+            else if((mm=l2.match(/^Balance:\s*(.+)$/i)))  person.balance  = parseNumber(mm[1]);
+            else if((mm=l2.match(/^Damage:\s*(.+)$/i)))   person.damage   = parseNumber(mm[1]);
+            else if((mm=l2.match(/^Healing:\s*(.+)$/i)))  person.healing  = parseNumber(mm[1]);
+            j++;
+          }
+          members.push(person); i=j-1;
+        }
+      }
+      let hours=0; if(header.sessionStr){const hhmm=header.sessionStr.split(':'); const hh=parseInt(hhmm[0],10)||0; const mm=parseInt(hhmm[1],10)||0; hours=hh+mm/60;}
+      return {header,members,hours};
+    }
+    function computePartySummary(parsed){
+      if(!parsed) return null;
+      const {header,members,hours}=parsed;
+      const memberCount=members.length;
+      const totalBalance=header.balance;
+      const individualShare=Math.floor(totalBalance/Math.max(1,memberCount));
+      const lootPerHour=hours>0?Math.round(header.loot/hours):header.loot;
+
+      const totalDamage=members.reduce((s,m)=>s+m.damage,0);
+      const dmgPct=members.map(m=>({name:m.name,pct:totalDamage>0?(m.damage/totalDamage*100):0})).sort((a,b)=>b.pct-a.pct);
+
+      const totalHealing=members.reduce((s,m)=>s+m.healing,0);
+      const healPct=members.map(m=>({name:m.name,pct:totalHealing>0?(m.healing/totalHealing*100):0})).sort((a,b)=>b.pct-a.pct);
+
+      const donors=[], receivers=[];
+      members.forEach(m=>{const diff=m.balance-individualShare; if(diff>0) donors.push({name:m.name,amt:diff}); else if(diff<0) receivers.push({name:m.name,amt:-diff});});
+      const transfersByDonor=new Map();
+      let di=0,ri=0;
+      while(di<donors.length && ri<receivers.length){
+        const d=donors[di], r=receivers[ri]; const move=Math.min(d.amt,r.amt);
+        if(move>0){const arr=transfersByDonor.get(d.name)||[]; arr.push({to:r.name,amount:move}); transfersByDonor.set(d.name,arr); d.amt-=move; r.amt-=move;}
+        if(d.amt===0) di++; if(r.amt===0) ri++;
+      }
+      const fromIso=header.fromDate && header.fromTime ? `${header.fromDate}T${header.fromTime}`:'';
+      return {memberCount,totalBalance,individualShare,lootPerHour,dmgPct,healPct,transfersByDonor,sessionStr:header.sessionStr||'',fromIso};
+    }
+    function renderPartySummary(summary){
+      const card=qs('partySummaryCard');
+      if(!summary){card.style.display='none';return;}
+      card.style.display='';
+
+      qs('ps_balance').textContent=formatWithCommas(summary.totalBalance);
+      qs('ps_individual').textContent=formatWithCommas(summary.individualShare);
+      qs('ps_lph').textContent=formatWithCommas(summary.lootPerHour);
+
+      const dUL=qs('ps_damage'); dUL.innerHTML='';
+      summary.dmgPct.forEach(d=>{const li=document.createElement('li'); li.textContent=`${d.name} (${d.pct.toFixed(2)}%)`; dUL.appendChild(li);});
+
+      const hUL=qs('ps_healing'); hUL.innerHTML='';
+      summary.healPct.forEach(h=>{const li=document.createElement('li'); li.textContent=`${h.name} (${h.pct.toFixed(2)}%)`; hUL.appendChild(li);});
+
+      const splitDiv=qs('ps_split'); splitDiv.innerHTML='';
+      if(summary.transfersByDonor.size===0){
+        splitDiv.textContent='— brak transferów, każdy ma docelowy udział.';
+      } else {
+        Array.from(summary.transfersByDonor.entries()).forEach(([donor,arr])=>{
+          const donorTitle=document.createElement('div');
+          donorTitle.style.marginTop='0.25rem';
+          donorTitle.innerHTML=`<b>${donor}:</b>`;
+          splitDiv.appendChild(donorTitle);
+
+          arr.forEach(x=>{
+            const plainAmount = String(x.amount);
+            const line=document.createElement('div');
+            line.innerHTML = `transfer <span class="gp">${plainAmount}</span> gp to ${x.to}`;
+            splitDiv.appendChild(line);
+          });
+        });
+      }
+      qs('ps_footer').textContent=`${summary.sessionStr} hunt on ${summary.fromIso}`;
+    }
+
+    /* ====== KOPIOWANIE PARTY SUMMARY ====== */
+    function copyPartyAll(){
+      const card=qs('partySummaryCard'); if(card.style.display==='none') return;
+
+      const balance    = qs('ps_balance').textContent;
+      const individual = qs('ps_individual').textContent;
+      const lph        = qs('ps_lph').textContent;
+
+      const dmgItems   = Array.from(document.querySelectorAll('#ps_damage li')).map(li=>li.textContent);
+      const healItems  = Array.from(document.querySelectorAll('#ps_healing li')).map(li=>li.textContent);
+
+      const splitDiv   = qs('ps_split');
+      const splitLines = Array.from(splitDiv.children).map(ch=>ch.textContent.trim()).filter(Boolean);
+
+      const footer     = qs('ps_footer').textContent;
+
+      const lines = [];
+      lines.push('Party Hunt Session');
+      lines.push(`Balance: ${balance} gp`);
+      lines.push(`Individual balance: ${individual} gp`);
+      lines.push(`Loot per hour: ${lph} gp`);
+      lines.push('Damage'); dmgItems.forEach(x=>lines.push(`‣ ${x}`));
+      lines.push('Healing'); healItems.forEach(x=>lines.push(`‣ ${x}`));
+      lines.push('Splitting Instructions');
+      if(splitLines.length===0) lines.push('— brak transferów, każdy ma docelowy udział.');
+      else splitLines.forEach(x=>lines.push(x));
+      lines.push(footer);
+
+      navigator.clipboard.writeText(lines.join('\n'))
+        .then(()=>showToast('Skopiowano cały wynik ✅','success'))
+        .catch(()=>showToast('Nie udało się skopiować','error'));
+    }
+    function copyPartyTransfersOnly(){
+      const splitDiv = qs('ps_split');
+
+      const lines = [];
+      for (const node of Array.from(splitDiv.children)) {
+        const text = node.textContent.trim();
+        const isDonorHeader   = /:$/i.test(text) && !/^transfer\s+/i.test(text);
+        const isTransferLine  = /^transfer\s+\d+\s+gp\s+to\s+/i.test(text);
+
+        if (isDonorHeader) {
+          lines.push(text);
+        } else if (isTransferLine) {
+          lines.push(text);
+        }
+      }
+
+      if (lines.length === 0) {
+        showToast('Brak transferów do skopiowania','info');
+        return;
+      }
+
+      navigator.clipboard.writeText(lines.join('\n'))
+        .then(()=>showToast('Skopiowano tylko transfery ✅','success'))
+        .catch(()=>showToast('Nie udało się skopiować transferów','error'));
+    }
+
+    /* ====== RENDER TABELI WYNIKÓW ====== */
+    function renderSummaryTable(totals,matchedTask,matchedInbu,matchedCats){
+      const tbody=document.querySelector('#lootTable tbody'); tbody.innerHTML='';
+      const rows=Array.from(totals.entries()).sort((a,b)=>a[0].localeCompare(b[0],'pl'));
+      rows.forEach(([name,qty])=>{
+        const tr=document.createElement('tr');
+        const tdName=document.createElement('td'); const tdQty=document.createElement('td');
+        tdName.textContent=name;
+
+        const isTask=matchedTask.get(name); const isInbu=matchedInbu.get(name);
+        if(isTask){const b=document.createElement('span'); b.className='badge'; b.textContent='✓ task'; tdName.appendChild(b);}
+        if(isInbu){const b=document.createElement('span'); b.className='badge-inbu'; b.textContent='★ inbu'; tdName.appendChild(b);}
+
+        const cats=(matchedCats && matchedCats.get(name))||[];
+        if(isTask && cats.length){
+          cats.forEach(cat=>{
+            const bc=document.createElement('span');
+            bc.className=`badge-cat ${cat}`;
+            bc.textContent=(cat==='rashid'?'Rashid':cat==='yasir'?'Yasir':cat==='flint'?'Flint (Rathleton)':cat==='other1'?'Other 1':'Other 2');
+            tdName.appendChild(bc);
+          });
+        }
+        tdQty.textContent=String(qty);
+        tr.appendChild(tdName); tr.appendChild(tdQty); tbody.appendChild(tr);
+      });
+    }
+
+    function renderTransfersExpanded(settle,containerId){
+      const container=qs(containerId); container.innerHTML='';
+      const pairsSorted=Array.from(settle.pairs.values()).sort((a,b)=>a.from===b.from ? a.to.localeCompare(b.to,'pl') : a.from.localeCompare(b.from,'pl'));
+      if(pairsSorted.length===0){
+        const div=document.createElement('div'); div.textContent='Brak transferów — docelowe ilości osiągalne bez wymiany lub brak aktywnych.';
+        container.appendChild(div); return;
+      }
+      for(const p of pairsSorted){
+        const block=document.createElement('div'); block.className='pair-block';
+        const title=document.createElement('div'); title.className='pair-title'; title.textContent=`${p.from} → ${p.to}`; block.appendChild(title);
+        const ul=document.createElement('ul'); ul.className='pair-items';
+        p.items.forEach(it=>{const li=document.createElement('li'); li.textContent=`${it.qty}x ${it.name}`; ul.appendChild(li);});
+        block.appendChild(ul); container.appendChild(block);
+      }
+    }
+
+    function renderUnsplitByPerson(unsplitRema,containerId,modeEnabled){
+      const container=qs(containerId); container.innerHTML='';
+      if(modeEnabled){
+        const div=document.createElement('div'); div.className='small'; div.textContent='Tryb WŁ. — resztki są przydzielane, tu nic nie pokazujemy.';
+        container.appendChild(div); return;
+      }
+      if(!unsplitRema || unsplitRema.length===0){
+        const div=document.createElement('div'); div.textContent='Brak niepodzielnych resztek.'; container.appendChild(div); return;
+      }
+      const perPerson=new Map();
+      for(const rec of unsplitRema){
+        for(const holder of rec.holders){
+          const name=holder.person, qty=holder.qty;
+          if(!perPerson.has(name)) perPerson.set(name,new Map());
+          const itemsMap=perPerson.get(name);
+          itemsMap.set(rec.name,(itemsMap.get(rec.name)||0)+qty);
+        }
+      }
+      const persons=Array.from(perPerson.entries()).sort((a,b)=>a[0].localeCompare(b[0],'pl'));
+      persons.forEach(([personName,itemsMap])=>{
+        const block=document.createElement('div'); block.className='rema-person-block';
+        const title=document.createElement('div'); title.className='rema-person-title'; title.textContent=personName; block.appendChild(title);
+        const ul=document.createElement('ul'); ul.className='rema-person-items';
+        const rows=Array.from(itemsMap.entries()).sort((a,b)=>a[0].localeCompare(b[0],'pl'));
+        rows.forEach(([item,qty])=>{const li=document.createElement('li'); li.textContent=`${qty}x ${item}`; ul.appendChild(li);});
+        block.appendChild(ul); container.appendChild(block);
+      });
+    }
+    function renderAssignedRemaByPerson(settle,containerId,modeEnabled){
+      const container=qs(containerId); container.innerHTML='';
+      if(!modeEnabled){
+        const div=document.createElement('div'); div.className='small'; div.textContent='Tryb WYŁ. — resztki nie są przydzielane (patrz „niepodzielne per osoba” powyżej).';
+        container.appendChild(div); return;
+      }
+      if(!settle.remainderAssigned || settle.remainderAssigned.length===0){
+        const div=document.createElement('div'); div.textContent='Brak reszt do przydziału.'; container.appendChild(div); return;
+      }
+      const perPerson=new Map();
+      for(const rec of settle.remainderAssigned){
+        for(const person of rec.assignedTo){
+          if(!perPerson.has(person)) perPerson.set(person,new Map());
+          const itemsMap=perPerson.get(person);
+          itemsMap.set(rec.name,(itemsMap.get(rec.name)||0)+1);
+        }
+      }
+      const persons=Array.from(perPerson.entries()).sort((a,b)=>a[0].localeCompare(b[0],'pl'));
+      persons.forEach(([personName,itemsMap])=>{
+        const block=document.createElement('div'); block.className='rema-person-block';
+        const title=document.createElement('div'); title.className='rema-person-title'; title.textContent=personName; block.appendChild(title);
+        const ul=document.createElement('ul'); ul.className='rema-person-items';
+        const rows=Array.from(itemsMap.entries()).sort((a,b)=>a[0].localeCompare(b[0],'pl'));
+        rows.forEach(([item,qty])=>{const li=document.createElement('li'); li.textContent=`${qty}x ${item}`; ul.appendChild(li);});
+        block.appendChild(ul); container.appendChild(block);
+      });
+    }
+
+    function renderTargetsColumns(targetsPerPerson,headId,rowId){
+      const theadRow=qs(headId); const tbodyRow=qs(rowId);
+      theadRow.innerHTML=''; tbodyRow.innerHTML='';
+      const people=Array.from(targetsPerPerson.entries());
+      if(people.length===0){
+        const th=document.createElement('th'); th.textContent='Osoby';
+        const td=document.createElement('td'); td.textContent='Brak aktywnych osób lub brak dopasowanych itemów.';
+        theadRow.appendChild(th); tbodyRow.appendChild(td); return;
+      }
+      people.sort((a,b)=>a[0].localeCompare(b[0],'pl'));
+      people.forEach(([personName])=>{const th=document.createElement('th'); th.textContent=personName; theadRow.appendChild(th);});
+      people.forEach(([_,itemsMap])=>{
+        const td=document.createElement('td'); td.className='cell-items';
+        const entries=Array.from(itemsMap.entries()).filter(([item,qty])=>qty>0).sort((a,b)=>a[0].localeCompare(b[0],'pl'));
+        if(entries.length===0){const div=document.createElement('div'); div.className='small'; div.textContent='—'; td.appendChild(div);}
+        else {entries.forEach(([item,qty])=>{const div=document.createElement('div'); div.textContent=`${qty}x ${item}`; td.appendChild(div);});}
+        tbodyRow.appendChild(td);
+      });
+    }
+
+    /* ====== KOPIOWANIE SEKCJI ====== */
+    function copyTransfersExpanded(containerId,btnId){
+      const cont=qs(containerId); const lines=[];
+      for(const block of cont.querySelectorAll('.pair-block')){
+        const title=block.querySelector('.pair-title')?.textContent||'';
+        const items=Array.from(block.querySelectorAll('.pair-items li')).map(li=>li.textContent);
+        if(title) lines.push(title); items.forEach(it=>lines.push(`• ${it}`));
+      }
+      const out=lines.join('\n');
+      navigator.clipboard.writeText(out).then(()=>{
+        const btn=qs(btnId); const old=btn.textContent; btn.textContent='Skopiowano ✅'; setTimeout(()=>btn.textContent=old,1500);
+        showToast('Skopiowano transfery','success');
+      }).catch(()=>showToast('Nie udało się skopiować transferów','error'));
+    }
+    function copyRemainder(){
+      const lines=[];
+      if(!remainderPriorityEnabled){
+        ['taskRemaByPerson','inbuRemaByPerson'].forEach(secId=>{
+          const sec=qs(secId);
+          for(const block of sec.querySelectorAll('.rema-person-block')){
+            const title=block.querySelector('.rema-person-title')?.textContent||'';
+            const items=Array.from(block.querySelectorAll('.rema-person-items li')).map(li=>li.textContent);
+            if(title) lines.push(title); items.forEach(it=>lines.push(`• ${it}`));
+          }
+        });
+      } else {
+        ['taskRemaAssignedByPerson','inbuRemaAssignedByPerson'].forEach(secId=>{
+          const sec=qs(secId);
+          for(const block of sec.querySelectorAll('.rema-person-block')){
+            const title=block.querySelector('.rema-person-title')?.textContent||'';
+            const items=Array.from(block.querySelectorAll('.rema-person-items li')).map(li=>li.textContent);
+            if(title) lines.push(title); items.forEach(it=>lines.push(`• ${it}`));
+          }
+        });
+      }
+      const out=lines.join('\n');
+      navigator.clipboard.writeText(out).then(()=>{
+        const btn=qs('copyRemaBtn'); const old=btn.textContent; btn.textContent='Skopiowano ✅'; setTimeout(()=>btn.textContent=old,1500);
+        showToast('Skopiowano resztki','success');
+      }).catch(()=>showToast('Nie udało się skopiować resztek','error'));
+    }
+    function copyLines(filterType){
+      const tbody=document.querySelector('#lootTable tbody'); const lines=[];
+      for(const tr of tbody.querySelectorAll('tr')){
+        const tds=tr.querySelectorAll('td'); const nameCell=tds[0]; const qty=tds[1].textContent;
+        const name=(nameCell.childNodes[0]?.nodeValue||nameCell.textContent).trim();
+        const isTask=!!nameCell.querySelector('.badge'); const isInbu=!!nameCell.querySelector('.badge-inbu');
+        if(filterType==='all'||(filterType==='task'&&isTask)||(filterType==='inbu'&&isInbu)) lines.push(`${qty}x ${name}`);
+      }
+      const out=lines.join('\n');
+      navigator.clipboard.writeText(out).then(()=>{
+        const btnId=filterType==='task'?'copyTaskBtn':filterType==='inbu'?'copyInbuBtn':'copyBtn';
+        const btn=qs(btnId); const old=btn.textContent; btn.textContent='Skopiowano ✅'; setTimeout(()=>btn.textContent=old,1500);
+        showToast('Skopiowano linie','success');
+      }).catch(()=>showToast('Nie udało się skopiować linii','error'));
+    }
+
+    /* ====== UI RESZTKI ====== */
+    function updateRemaUI(){
+      const btn=qs('toggleRemaBtn'); const lbl=qs('remaModeLabel'); const title=qs('remaTitle');
+      if(remainderPriorityEnabled){
+        btn.classList.add('on'); btn.textContent='Rozdziel resztki: WŁ.';
+        lbl.textContent='Tryb przydziału reszt: WŁ. — droppers (po 1) → losowo.'; lbl.classList.remove('warn');
+        title.textContent='Resztki (podzielone)';
+      } else {
+        btn.classList.remove('on'); btn.textContent='Rozdziel resztki: WYŁ.';
+        lbl.textContent='Tryb przydziału reszt: WYŁ. — niepodzielne sztuki pokazane poniżej u konkretnych osób.'; lbl.classList.add('warn');
+        title.textContent='Resztki (niepodzielne)';
+      }
+    }
+
+    /* ====== USTAWIENIA (localStorage) ====== */
+    const STORAGE_KEY='lootPartySettingsV1';
+    function collectSettings(){
+      const taskR = qs('taskListRashid').value || '';
+      const taskY = qs('taskListYasir' ).value || '';
+      const taskF = qs('taskListFlint' ).value || '';
+      const taskO1= qs('taskListOther1').value || '';
+      const taskO2= qs('taskListOther2').value || '';
+      const checked = {
+        task_rashid : Array.from(document.querySelectorAll('#taskListRashidChecks input[type="checkbox"]:checked')).map(cb=>cb.getAttribute('data-key')),
+        task_yasir  : Array.from(document.querySelectorAll('#taskListYasirChecks  input[type="checkbox"]:checked')).map(cb=>cb.getAttribute('data-key')),
+        task_flint  : Array.from(document.querySelectorAll('#taskListFlintChecks  input[type="checkbox"]:checked')).map(cb=>cb.getAttribute('data-key')),
+        task_other1 : Array.from(document.querySelectorAll('#taskListOther1Checks input[type="checkbox"]:checked')).map(cb=>cb.getAttribute('data-key')),
+        task_other2 : Array.from(document.querySelectorAll('#taskListOther2Checks input[type="checkbox"]:checked')).map(cb=>cb.getAttribute('data-key')),
+        inbu        : Array.from(document.querySelectorAll('#inbuGrid            input[type="checkbox"]:checked')).map(cb=>cb.getAttribute('data-key')),
+      };
+      return { taskRashid:taskR, taskYasir:taskY, taskFlint:taskF, taskOther1:taskO1, taskOther2:taskO2, checked };
+    }
+    function applySettings(obj){
+      if(!obj) return;
+      const { taskRashid, taskYasir, taskFlint, taskOther1, taskOther2, checked } = obj;
+
+      if(typeof taskRashid === 'string') qs('taskListRashid').value = taskRashid;
+      if(typeof taskYasir  === 'string') qs('taskListYasir' ).value = taskYasir;
+      if(typeof taskFlint  === 'string') qs('taskListFlint' ).value = taskFlint;
+      if(typeof taskOther1 === 'string') qs('taskListOther1').value = taskOther1;
+      if(typeof taskOther2 === 'string') qs('taskListOther2').value = taskOther2;
+
+      renderChecklist('taskListRashid','taskListRashidChecks','task_rashid');
+      renderChecklist('taskListYasir', 'taskListYasirChecks',  'task_yasir');
+      renderChecklist('taskListFlint', 'taskListFlintChecks',  'task_flint');
+      renderChecklist('taskListOther1','taskListOther1Checks', 'task_other1');
+      renderChecklist('taskListOther2','taskListOther2Checks', 'task_other2');
+
+      const preChecked=new Set(checked?.inbu || []);
+      renderInbuGrid(preChecked);
+
+      const setChecked=(containerId,keys=[])=>{
+        const allow=new Set(keys||[]);
+        document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(cb=>{
+          const key=cb.getAttribute('data-key');
+          cb.checked=allow.has(key);
+        });
+      };
+      if(checked){
+        setChecked('taskListRashidChecks', checked.task_rashid || []);
+        setChecked('taskListYasirChecks',  checked.task_yasir  || []);
+        setChecked('taskListFlintChecks',  checked.task_flint  || []);
+        setChecked('taskListOther1Checks', checked.task_other1 || []);
+        setChecked('taskListOther2Checks', checked.task_other2 || []);
+      }
+    }
+    function saveSettingsLocal(objOptional){
+      try{ const data=objOptional||collectSettings(); localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); showToast('Zapisano ustawienia','success'); }
+      catch(e){ console.warn('saveSettingsLocal error', e); showToast('Błąd zapisu ustawień','error'); }
+    }
+    function loadSettingsLocal(){
+      try{ const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return false; const obj=JSON.parse(raw); applySettings(obj); return true; }
+      catch(e){ console.warn('loadSettingsLocal error', e); return false; }
+    }
+    function exportSettings(){
+      try{
+        const data=collectSettings();
+        const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='loot-party-settings.json';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+        showToast('Wyeksportowano ustawienia','success');
+      } catch(e){ showToast('Błąd eksportu ustawień','error'); }
+    }
+    function importSettingsFromFile(file){
+      const reader=new FileReader();
+      reader.onload=()=>{ try{ const obj=JSON.parse(reader.result); applySettings(obj); saveSettingsLocal(obj); summarize(); showToast('Zaimportowano ustawienia','success'); toggleResultSummary(false); } catch(e){ showToast('Nieprawidłowy plik JSON','error'); } };
+      reader.onerror=()=>showToast('Błąd odczytu pliku','error');
+      reader.readAsText(file);
+    }
+
+    /* ====== DOMYŚLNE LISTY TASK (JEDEN BLOK) ====== */
+    const DEFAULT_TASK_RASHID = `
+	Buckle
+Chaos Mace
+Crystal Crossbow
+Crystal Mace
+Crystal Sword
+Crystalline Armor
+Dark Shield
+Diamond Sceptre
+Dragon Slayer
+Glacier Mask
+Glacier Robe
+Glacier Shoes
+Golden Legs
+Heavy Machete
+Heavy Trident
+Hibiscus Dress
+Lightning Boots
+Lightning Headband
+Lightning Robe
+Magma Boots
+Magma Coat
+Magma Legs
+Magma Monocle
+Mammoth Whopper
+Mercenary Sword
+Relic Sword
+Skullcracker Armor
+Taurus Mace
+Terra Boots
+Terra Hood
+Terra Mantle
+Vile Axe
+War Axe
+`.trim();
+    const DEFAULT_TASK_FLINT  = `
+	Alloy Legs
+Battle Shield
+Bone Club
+Double Axe
+Glooth Axe
+Glooth Blade
+Glooth Cape
+Glooth Club
+Halberd
+Metal Bat
+Metal Spats
+Mino Lance
+Mino Shield
+Orcish Axe
+Plate Legs
+Rubber Cap
+Swampling Club
+`.trim();
+    const DEFAULT_TASK_OTHER1 = `
+	Ancient Stone
+Angelic Axe
+Badger Boots
+Black Shield
+Bonebreaker
+Broadsword
+Broken Gladiator Shield
+Broodrider Saddle
+Combat Knife
+Cowbell
+Crystalline Spikes
+Crystalline Sword
+Demonic Matter
+Dragon Hammer
+Exalted Core
+Execowtioner Mask
+Fire Axe
+Flask of Demonic Blood
+Focus Cape
+Fur Armor
+Giant Pacifier
+Glob of Glooth
+Glooth Injection Tube
+Glorious Axe
+Golden Sickle
+Guardian Shield
+Knife
+Knight Axe
+Knight Legs
+Magma Clump
+Metal Jaw
+Necromantic Rust
+Ornate Crossbow
+Piece of Draconian Steel
+Piece of Hell Steel
+Poisoned Fang
+Pulverized Ore
+Ratana
+Raw Meat
+Ripper Lance
+Scimitar
+Shiny Stone
+Slimy Leaf Tentacle
+Sliver
+Spellbook of Mind Control
+Spellweaver's Robe
+Spiky Club
+Stampor Talons
+Strange Helmet
+Sulphurous Stone
+Titan Axe
+Vampire's Cape Chain
+Vein of Ore
+Wereboar Loincloth
+Wood Cape
+Wooden Spellbook
+Zaoan Armor
+Zaoan Robe
+Zaoan Shoes
+`.trim();
+    const DEFAULT_TASK_OTHER2 = ``.trim();
+
+    const DEFAULT_TASK_YASIR  = `Afflicted Strider Head
+Afflicted Strider Worms
+Amber Souvenir
+Ancient Belt Buckle
+Banana Sash
+Basalt Crumbs
+Basalt Fetish
+Basalt Figurine
+Bashmu Fang
+Bashmu Feather
+Bashmu Tongue
+Blemished Spawn Abdomen
+Blemished Spawn Head
+Blemished Spawn Tail
+Bloated Maggot
+Blood Amulet
+Blood Hood
+Blood Preservation
+Blood Tincture in a Vial
+Bloodshot Giant Eye
+Blue Goanna Scale
+Boar Man Hoof
+Boggy Dreads
+Bola
+Bone Fetish
+Bone Fibula
+Bone Rattle
+Bone Shoulderplate
+Bone Toothpick
+Bonecarving Knife
+Bony Tail
+Book of Necromantic Rituals
+Book Page
+Book with a Dragon
+Book with an Hourglass
+Bowl of Terror Sweat
+Brigadeiro
+Brinebrute Claw
+Broken Draken Mail
+Broken Halberd
+Broken Mitmah Necklace
+Broken Slicer
+Broken Throwing Axe
+Bulltaur Armor Scrap
+Bulltaur Hoof
+Bulltaur Horn
+Bundle of Cursed Straw
+Carnisylvan Bark
+Carnisylvan Finger
+Carnivostrich Feather
+Cat's Paw
+Cave Devourer Eyes
+Cave Devourer Legs
+Cave Devourer Maw
+Centipede Leg
+Chain Leash
+Chasm Spawn Abdomen
+Chasm Spawn Head
+Chasm Spawn Tail
+Cheese Cutter
+Cheesy Figurine
+Cluster of Crystallized Death
+Cobra Crest
+Colourful Feather
+Colourful Snail Shell
+Compound Eye
+Cookbook
+Coral Branch
+Crab Man Claws
+Cracked Alabaster Vase
+Crawler's Essence
+Cry-Stal
+Crystal Bone
+Crystal of the Mitmah
+Crystallized Death
+Cuirass Plate
+Curious Matter
+Cursed Shoulder Spikes
+Damaged Armor Plates
+Damselfly Eye
+Dandelion Seeds
+Dangerous Proto Matter
+Dark Obsidian Splinter
+Dark Rosary
+Darklight Basalt Chunk
+Darklight Core
+Darklight Matter
+Dead Weight
+Deadly Fangs
+Decayed Finger Bone
+Deepling Breaktime Snack
+Deepling Claw
+Deepling Guard Belt Buckle
+Deepling Ridge
+Deepling Scales
+Deeptags
+Deepworm Jaws
+Deepworm Spike Roots
+Deepworm Spikes
+Demon Root
+Diremaw Brainpan
+Diremaw Legs
+Dirty Turban
+Dowser
+Dragolisk Eye
+Dragolisk Poison Gland
+Dragon Priest's Wandtip
+Dragon Tongue
+Dragon's Tail
+Draken Wristbands
+Dream Essence Egg
+Dung Ball
+Earflap
+Elder Bonelord Tentacle
+Elven Astral Observer
+Emerald Tortoise Shell
+Empty Honey Glass
+Encrypted Notes
+Energy Ball
+Ensouled Essence
+Essence of a Bad Dream
+Eye of a Deepling
+Eye of a Weeper
+Eye of Corruption
+Eyeless Devourer Legs
+Eyeless Devourer Maw
+Eyeless Devourer Tongue
+Fafnar Symbol
+Falcon Crest
+Fig Leaf
+Fir Cone
+Flotsam
+Fox Paw
+Frazzle Tongue
+Frozen Lightning
+Gauze Bandage
+Ghastly Dragon Head
+Giant Tusk
+Girlish Hair Decoration
+Girtablilu Warrior Carapace
+Glob of Acid Slime
+Glob of Tar
+Glowing Rune
+Goanna Claw
+Goanna Meat
+Golden Lotus Brooch
+Golden Sun Coin
+Gore Horn
+Gorerilla Mane
+Gorerilla Tail
+Gorger Antlers
+Grappling Hook
+Green Bandage
+Half-Digested Stones
+Half-Eaten Brain
+Harpy Feathers
+Headpecker Beak
+Headpecker Feather
+Heart Amphora
+Hellhound Slobber
+Hemp Rope
+Hideous Chunk
+High Guard Flag
+High Guard Shoulderplates
+Holy Ash
+Horoscope
+Human Teeth
+Humongous Chunk
+Hydra Head
+Hydrophytes
+Ice Flower
+Idol of the Forge
+Inkwell
+Instable Proto Matter
+Ivory Carving
+Key to the Drowned Library
+Kongra's Shoulderpad
+Lamassu Hoof
+Lamassu Horn
+Lancer Beetle Shell
+Lancet
+Lavafungus Head
+Lavafungus Ring
+Lavaworm Jaws
+Lavaworm Spike Roots
+Lavaworm Spikes
+Lime Tart
+Liodile Fang
+Lion Cloak Patch
+Lion Crest
+Lost Basher's Spike
+Lost Bracers
+Luminous Orb
+Lump of Earth
+Mad Froth
+Makara Fin
+Makara Tongue
+Mammoth Tusk
+Manticore Ear
+Manticore Tail
+Mantosaurus Jaw
+Mega Dragon Heart
+Mercurial Wing
+Molten Dragon Essence
+Mould Heart
+Mouldy Powder
+Mummified Demon Finger
+Mutated Bat Ear
+Mutated Flesh
+Mutated Rat Tail
+Naga Archer Scales
+Naga Armring
+Naga Earring
+Naga Warrior Scales
+Necromantic Core
+Night Harpy Feathers
+Nighthunter Wing
+Nimmersatt's Seal
+Odd Organ
+Ogre Ear Stud
+Old Girtablilu Carapace
+Orcish Gear
+Orcish Toothbrush
+Pair of Hellflayer Horns
+Paper Boat
+Paper Plane
+Piece of Frozen Night
+Piece of Warrior Armor
+Pirat's Tail
+Pirate Coin
+Plasma Pearls
+Plasmatic Lightning
+Pool of Chitinous Glue
+Pot of Orcish Warpaint
+Prehemoth Claw
+Prehemoth Horns
+Pressed Flower
+Quara Bone
+Quara Eye
+Quara Pincers
+Quara Tentacle
+Red Goanna Scale
+Red Hair Dye
+Resin Parasite
+Resinous Fish Fin
+Rhindeer Antlers
+Ripptor Claw
+Ripptor Scales
+Ritual Bone Knife
+Ritual Tooth
+Roots
+Rotten Feather
+Rotten Piece of Cloth
+Rotten Roots
+Sabretooth Fur
+Sandcrawler Shell
+Scale of Corruption
+Scarab Pincers
+Scorpion Charm
+Scroll of Heroic Deeds
+Scythe Leg
+Sealing Wax
+Shaggy Tail
+Shamanic Talisman
+Shark Fins
+Shimmering Beetles
+Silencer Resonating Chamber
+Silken Bookmark
+Silver Moon Coin
+Silver Poniard
+Sineater Wing
+Single Human Eye
+Skull Fetish
+Small Flask of Eyedrops
+Small Notebook
+Small Treasure Chest
+Small Tropical Fish
+Spark Sphere
+Sparkion Claw
+Sparkion Legs
+Sparkion Stings
+Sparkion Tail
+Spellsinger's Seal
+Sphinx Tiara
+Spiked Bracers
+Spiked Gorget
+Spiked Iron Ball
+Spitter Nose
+Staff Piece
+Stag Parchment
+Stalking Seeds
+Star Ink
+Stone Wing
+Stonerefiner's Skull
+Strange Substance
+Streaked Devourer Eyes
+Streaked Devourer Legs
+Streaked Devourer Maw
+Striped Fur
+Sulphider Shell
+Sulphur Powder
+Swarmer Antenna
+Tail of Corruption
+Telescope Eye
+Terramite Legs
+Thorn
+Toe Nails
+Tooth File
+Torn Page
+Trapped Bad Dream Monster
+Tunnel Tyrant Head
+Tunnel Tyrant Shell
+Two-Headed Turtle Heads
+Undertaker Fangs
+Unholy Bone
+Venison
+Volatile Proto Matter
+Wardragon Claw
+Wardragon Tooth
+Waspoid Claw
+Weaver's Wandtip
+Werebadger Claws
+Werebadger Skull
+Werebear Fur
+Werebear Skull
+Wereboar Tusks
+Werecrocodile Tongue
+Werefox Tail
+Werehyaena Nose
+Werehyaena Talisman
+Werepanther Claw
+Weretiger Tooth
+Werewolf Fur
+Widow's Mandibles
+Wild Flowers
+Wimp Tooth Chain
+Winged Tail
+Witch Broom
+Worm Sponge
+Yapunac Dagger
+Zaogun Flag
+Zaogun Shoulderplates
+`.trim();
+
+    function restoreDefaultsTask(){
+      qs('taskListRashid').value = DEFAULT_TASK_RASHID;
+      qs('taskListYasir' ).value = DEFAULT_TASK_YASIR;   // TODO: uzupełnić pełną listę Yasir (po jednej pozycji na linię)
+      qs('taskListFlint' ).value = DEFAULT_TASK_FLINT;
+      qs('taskListOther1').value = DEFAULT_TASK_OTHER1;
+      qs('taskListOther2').value = DEFAULT_TASK_OTHER2;
+
+      renderChecklist('taskListRashid','taskListRashidChecks','task_rashid');
+      renderChecklist('taskListYasir', 'taskListYasirChecks',  'task_yasir');
+      renderChecklist('taskListFlint', 'taskListFlintChecks',  'task_flint');
+      renderChecklist('taskListOther1','taskListOther1Checks', 'task_other1');
+      renderChecklist('taskListOther2','taskListOther2Checks', 'task_other2');
+
+      ['taskListRashidChecks','taskListYasirChecks','taskListFlintChecks','taskListOther1Checks','taskListOther2Checks'].forEach(id=>{
+        document.querySelectorAll(`#${id} input[type="checkbox"]`).forEach(cb=>cb.checked=true);
+      });
+
+      saveSettingsLocal(); summarize(); showToast('Przywrócono domyślne (Task)','info');
+    }
+
+    function restoreDefaultsInbu(){
+      renderInbuGrid(new Set()); document.querySelectorAll('#inbuGrid input[type="checkbox"]').forEach(cb=>cb.checked=true);
+      saveSettingsLocal(); summarize(); showToast('Przywrócono domyślne (Inbu)','info');
+    }
+
+    /* ====== CLEAR / SUMMARIZE / PARTICIPANTS ====== */
+    function clearFields(){
+      ['t1','t2','t3','t4'].forEach(id=>qs(id).value=''); ['n1','n2','n3','n4'].forEach((id,i)=>qs(id).value=`Osoba ${i+1}`);
+      restoreDefaultsTask(); restoreDefaultsInbu(); qs('sessionRaw').value='';
+      qs('partySummaryCard').style.display='none';
+      remainderPriorityEnabled=false; updateRemaUI();
+
+      renderSummaryTable(new Map(),new Map(),new Map(),new Map());
+      ['activeCount','distinctCount','distinctCountFoot','totalQty','taskDistinct','taskTotalQty','inbuDistinct','inbuTotalQty'].forEach(id=>qs(id).textContent='0');
+      ['taskTransfersExpanded','inbuTransfersExpanded','taskRemaByPerson','inbuRemaByPerson','taskRemaAssignedByPerson','inbuRemaAssignedByPerson'].forEach(id=>qs(id).innerHTML='');
+      qs('taskTargetsHead').innerHTML=''; qs('taskTargetsRow').innerHTML='';
+      qs('inbuTargetsHead').innerHTML=''; qs('inbuTargetsRow').innerHTML='';
+
+      saveSettingsLocal(); showToast('Wyczyszczono pola','info');
+    }
+    function getParticipants(){
+      const names=[(qs('n1').value||'Osoba 1').trim(),(qs('n2').value||'Osoba 2').trim(),(qs('n3').value||'Osoba 3').trim(),(qs('n4').value||'Osoba 4').trim()];
+      const texts=[qs('t1').value,qs('t2').value,qs('t3').value,qs('t4').value];
+      return names.map((name,idx)=>({name,text:texts[idx],idx}));
+    }
+
+    function summarize(){
+      const participants=getParticipants();
+      const { rashidSet, yasirSet, flintSet, other1Set, other2Set, unionTaskSet } = readTaskListsChecked();
+      const inbuSet = readInbuListChecked();
+
+      const activeParticipants=participants.filter(p=>extractLootLines(p.text||'').length>0);
+      qs('activeCount').textContent=String(activeParticipants.length);
+
+      const allItems=buildAllItems(participants,unionTaskSet,inbuSet,{rashidSet,yasirSet,flintSet,other1Set,other2Set});
+      const totals=new Map(), matchedTask=new Map(), matchedInbu=new Map(), matchedCats=new Map(); let grandTotalQty=0;
+      for(const [name,node] of allItems.entries()){
+        totals.set(name,node.totalQty); grandTotalQty+=node.totalQty;
+        matchedTask.set(name,node.flags.task); matchedInbu.set(name,node.flags.inbu);
+        matchedCats.set(name,node.flags.cats||[]);
+      }
+      renderSummaryTable(totals,matchedTask,matchedInbu,matchedCats);
+
+      const distinctCount=totals.size;
+      const taskDistinct=Array.from(allItems.values()).filter(n=>n.flags.task).length;
+      const inbuDistinct=Array.from(allItems.values()).filter(n=>n.flags.inbu).length;
+      const taskTotalQty=Array.from(allItems.values()).reduce((acc,n)=>acc+(n.flags.task?n.totalQty:0),0);
+      const inbuTotalQty=Array.from(allItems.values()).reduce((acc,n)=>acc+(n.flags.inbu?n.totalQty:0),0);
+
+      qs('distinctCount').textContent=String(distinctCount);
+      qs('distinctCountFoot').textContent=String(distinctCount);
+      qs('totalQty').textContent=String(grandTotalQty);
+      qs('taskDistinct').textContent=String(taskDistinct);
+      qs('taskTotalQty').textContent=String(taskTotalQty);
+      qs('inbuDistinct').textContent=String(inbuDistinct);
+      qs('inbuTotalQty').textContent=String(inbuTotalQty);
+
+      const taskSettle=settleCategory(allItems,activeParticipants,'task',remainderPriorityEnabled);
+      const inbuSettle=settleCategory(allItems,activeParticipants,'inbu',remainderPriorityEnabled);
+
+      renderTransfersExpanded(taskSettle,'taskTransfersExpanded');
+      renderTransfersExpanded(inbuSettle,'inbuTransfersExpanded');
+
+      renderUnsplitByPerson(taskSettle.unsplitRema,'taskRemaByPerson',remainderPriorityEnabled);
+      renderUnsplitByPerson(inbuSettle.unsplitRema,'inbuRemaByPerson',remainderPriorityEnabled);
+      renderAssignedRemaByPerson(taskSettle,'taskRemaAssignedByPerson',remainderPriorityEnabled);
+      renderAssignedRemaByPerson(inbuSettle,'inbuRemaAssignedByPerson',remainderPriorityEnabled);
+
+      renderTargetsColumns(taskSettle.targetsPerPerson,'taskTargetsHead','taskTargetsRow');
+      renderTargetsColumns(inbuSettle.targetsPerPerson,'inbuTargetsHead','inbuTargetsRow');
+
+      const rawSession=(qs('sessionRaw').value||'').trim();
+      if(rawSession.length>0){
+        const parsed=parseSessionBlock(rawSession);
+        const summary=computePartySummary(parsed);
+        renderPartySummary(summary);
+      }else{
+        qs('partySummaryCard').style.display='none';
+      }
+    }
+
+    /* ====== Toggle Wynik podsumowania ====== */
+    function toggleResultSummary(open = null) {
+      const wrap = qs('resultSummaryWrap');
+      const btn  = qs('toggleResultSummaryBtn');
+      const isOpen = wrap.classList.contains('open');
+      const newState = (open === null) ? !isOpen : !!open;
+      if (newState) { wrap.classList.add('open'); btn.textContent = 'Ukryj wynik podsumowania'; }
+      else { wrap.classList.remove('open'); btn.textContent = 'Pokaż wynik podsumowania'; }
+    }
+
+    /* ====== CHECKLIST HELPER ====== */
+    function ensureChecklistBuilt(containerId, textareaId, groupKey) {
+      const cont = qs(containerId);
+      if (!cont) return;
+      if (cont.children.length === 0) {
+        renderChecklist(textareaId, containerId, groupKey);
+      }
+    }
+
+    /* ====== TOGGLE ALL (SELECT/CLEAR) ====== */
+    function toggleAll(containerId, checked) {
+      const cont = qs(containerId);
+      if (!cont) {
+        showToast('Nie znaleziono kontenera: ' + containerId, 'error');
+        return;
+      }
+      const boxes = cont.querySelectorAll('input[type="checkbox"]');
+      if (boxes.length === 0) {
+        showToast('Brak pozycji do zaznaczenia w: ' + containerId, 'info');
+        return;
+      }
+      boxes.forEach(cb => {
+        cb.checked = checked;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      saveSettingsLocal();
+      summarize();
+    }
+
+    /* ====== INIT ====== */
+    document.addEventListener('DOMContentLoaded',()=>{
+      try{
+        const loaded = loadSettingsLocal();
+        if(!loaded){
+          qs('taskListRashid').value = DEFAULT_TASK_RASHID;
+          qs('taskListYasir' ).value = DEFAULT_TASK_YASIR;
+          qs('taskListFlint' ).value = DEFAULT_TASK_FLINT;
+          qs('taskListOther1').value = DEFAULT_TASK_OTHER1;
+          qs('taskListOther2').value = DEFAULT_TASK_OTHER2;
+
+          renderChecklist('taskListRashid','taskListRashidChecks','task_rashid');
+          renderChecklist('taskListYasir', 'taskListYasirChecks',  'task_yasir');
+          renderChecklist('taskListFlint', 'taskListFlintChecks',  'task_flint');
+          renderChecklist('taskListOther1','taskListOther1Checks', 'task_other1');
+          renderChecklist('taskListOther2','taskListOther2Checks', 'task_other2');
+
+          renderInbuGrid(new Set()); // wszystkie zaznaczone domyślnie
+        }
+
+        // checklisty domyślnie schowane
+        ['taskRashidWrap','taskYasirWrap','taskFlintWrap','taskOther1Wrap','taskOther2Wrap','inbuWrap'].forEach(id=>qs(id).classList.remove('open'));
+
+        // wynik podsumowania domyślnie schowany
+        toggleResultSummary(false);
+
+        updateRemaUI();
+
+        // Główne przyciski
+        qs('sumBtn').addEventListener('click', summarize);
+        qs('toggleRemaBtn').addEventListener('click', ()=>{remainderPriorityEnabled=!remainderPriorityEnabled; updateRemaUI(); summarize();});
+        qs('clearBtn').addEventListener('click', clearFields);
+
+        // Restore defaults
+        qs('restoreDefaultsTaskBtn').addEventListener('click', restoreDefaultsTask);
+        qs('restoreDefaultsInbuBtn').addEventListener('click', restoreDefaultsInbu);
+
+        // Kopiowanie wyników (tabela)
+        qs('copyBtn').addEventListener('click', ()=>copyLines('all'));
+        qs('copyTaskBtn').addEventListener('click', ()=>copyLines('task'));
+        qs('copyInbuBtn').addEventListener('click', ()=>copyLines('inbu'));
+
+        // Kopiowanie transferów i resztek
+        qs('copyTaskTransfers').addEventListener('click', ()=>copyTransfersExpanded('taskTransfersExpanded','copyTaskTransfers'));
+        qs('copyInbuTransfers').addEventListener('click', ()=>copyTransfersExpanded('inbuTransfersExpanded','copyInbuTransfers'));
+        qs('copyRemaBtn').addEventListener('click', copyRemainder);
+
+        // Party session: parsuj oraz kopiuj przyciski
+        qs('parseSessionBtn').addEventListener('click', summarize);
+        qs('copyPartyAllBtn').addEventListener('click', copyPartyAll);
+        qs('copyPartyTransfersBtn').addEventListener('click', copyPartyTransfersOnly);
+
+        // Task textarea → checklist + auto-save
+        qs('taskListRashid').addEventListener('input', ()=>{renderChecklist('taskListRashid','taskListRashidChecks','task_rashid'); saveSettingsLocal();});
+        qs('taskListYasir' ).addEventListener('input', ()=>{renderChecklist('taskListYasir','taskListYasirChecks','task_yasir'); saveSettingsLocal();});
+        qs('taskListFlint' ).addEventListener('input', ()=>{renderChecklist('taskListFlint','taskListFlintChecks','task_flint'); saveSettingsLocal();});
+        qs('taskListOther1').addEventListener('input', ()=>{renderChecklist('taskListOther1','taskListOther1Checks','task_other1'); saveSettingsLocal();});
+        qs('taskListOther2').addEventListener('input', ()=>{renderChecklist('taskListOther2','taskListOther2Checks','task_other2'); saveSettingsLocal();});
+
+        // Zmiany checkboxów -> auto-save
+        ['taskListRashidChecks','taskListYasirChecks','taskListFlintChecks','taskListOther1Checks','taskListOther2Checks','inbuGrid'].forEach(id=>{
+          qs(id).addEventListener('change', (e)=>{ if(e.target && e.target.type==='checkbox') saveSettingsLocal(); });
+        });
+
+        // Toggle checklisty — POPRAWIONE
+        qs('toggleTaskChecksBtn').addEventListener('click', (e) => {
+          const wrapIds = ['taskRashidWrap','taskYasirWrap','taskFlintWrap','taskOther1Wrap','taskOther2Wrap'];
+          const wraps = wrapIds.map(id => qs(id)).filter(Boolean);
+          if (wraps.length === 0) {
+            showToast('Nie znaleziono checklist (sprawdź ID sekcji Task)', 'error');
+            return;
+          }
+          const anyOpen = wraps.some(w => w.classList.contains('open'));
+          const nextState = !anyOpen;
+          wraps.forEach(w => {
+            w.classList.toggle('open', nextState);
+            w.setAttribute('aria-hidden', (!nextState).toString());
+          });
+          e.currentTarget.textContent = nextState ? 'Ukryj checklisty' : 'Pokaż checklisty';
+        });
+
+        // Toggle Inbu checklisty
+        qs('toggleInbuChecksBtn').addEventListener('click', (e)=>{
+          const w=qs('inbuWrap'); const isOpen=w.classList.toggle('open');
+          w.setAttribute('aria-hidden', (!isOpen).toString());
+          e.currentTarget.textContent = isOpen ? 'Ukryj checklistę Inbu' : 'Pokaż checklistę Inbu';
+        });
+
+        // Toggle Wyniku podsumowania
+        qs('toggleResultSummaryBtn').addEventListener('click', () => toggleResultSummary());
+
+        // Eksport / Import / Zapis
+        qs('exportSettingsBtn').addEventListener('click', exportSettings);
+        qs('saveSettingsBtn').addEventListener('click', () => saveSettingsLocal());
+        qs('importSettingsBtn').addEventListener('click', () => qs('importFile').click());
+        qs('importFile').addEventListener('change', (e) => {
+          const file = e.target.files?.[0];
+          if (file) importSettingsFromFile(file);
+          e.target.value = ''; // reset dla ponownego wyboru tego samego pliku
+        });
+
+        // ——— ZAZNACZ/ODZNACZ WSZYSTKIE (Task) ———
+        // RASHID
+        qs('taskRashidSelectAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListRashidChecks', 'taskListRashid', 'task_rashid');
+          toggleAll('taskListRashidChecks', true);
+        });
+        qs('taskRashidClearAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListRashidChecks', 'taskListRashid', 'task_rashid');
+          toggleAll('taskListRashidChecks', false);
+        });
+
+        // YASIR
+        qs('taskYasirSelectAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListYasirChecks', 'taskListYasir', 'task_yasir');
+          toggleAll('taskListYasirChecks', true);
+        });
+        qs('taskYasirClearAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListYasirChecks', 'taskListYasir', 'task_yasir');
+          toggleAll('taskListYasirChecks', false);
+        });
+
+        // FLINT
+        qs('taskFlintSelectAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListFlintChecks', 'taskListFlint', 'task_flint');
+          toggleAll('taskListFlintChecks', true);
+        });
+        qs('taskFlintClearAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListFlintChecks', 'taskListFlint', 'task_flint');
+          toggleAll('taskListFlintChecks', false);
+        });
+
+        // OTHER 1
+        qs('taskOther1SelectAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListOther1Checks', 'taskListOther1', 'task_other1');
+          toggleAll('taskListOther1Checks', true);
+        });
+        qs('taskOther1ClearAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListOther1Checks', 'taskListOther1', 'task_other1');
+          toggleAll('taskListOther1Checks', false);
+        });
+
+        // OTHER 2
+        qs('taskOther2SelectAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListOther2Checks', 'taskListOther2', 'task_other2');
+          toggleAll('taskListOther2Checks', true);
+        });
+        qs('taskOther2ClearAll').addEventListener('click', () => {
+          ensureChecklistBuilt('taskListOther2Checks', 'taskListOther2', 'task_other2');
+          toggleAll('taskListOther2Checks', false);
+        });
+
+        // ——— ZAZNACZ/ODZNACZ WSZYSTKIE (Inbu) ———
+        qs('inbuSelectAll').addEventListener('click', () => toggleAll('inbuGrid', true));
+        qs('inbuClearAll').addEventListener('click', () => toggleAll('inbuGrid', false));
+
+        // Stopka: data aktualizacji
+        qs('itemsUpdatedAt').textContent = new Date().toLocaleDateString('pl-PL');
+
+        summarize();
+      }catch(err){
+        console.error('Init error:', err);
+        showToast('Błąd inicjalizacji. Sprawdź konsolę.', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
