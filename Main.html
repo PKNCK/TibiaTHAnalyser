@@ -111,7 +111,7 @@
   <h1>Loot Party — Rozdział + Podsumowanie &amp; Listy</h1>
   <p class="desc">
     Wklej „Session data…” do pól poniżej i kliknij <b>Podsumuj loot</b>. Dzielenie obejmuje tylko <b>aktywnych</b>.
-    <b>„Rozdziel resztki”</b> włącza/wyłącza priorytetowy przydział reszt (droppers → losowo).
+    <b>„Rozdziel resztki”</b> włącza/wyłącza priorytetowy przydział reszt (droppers › losowo).
   </p>
   <button id="exportSettingsBtn" class="secondary" type="button">Eksportuj ustawienia</button>
   <button id="importSettingsBtn" class="secondary" type="button">Importuj ustawienia</button>
@@ -333,7 +333,7 @@
           <div class="box"><h3>Na liście inbu — łączna ilość sztuk</h3><div class="value" id="inbuTotalQty">0</div></div>
         </div>
 
-        <div class="legend">W tabeli poniżej: <span class="badge">✓ task</span> i <span class="badge-inbu">★ inbu</span>.</div>
+        <div class="legend">W tabeli poniżej: <span class="badge">? task</span> i <span class="badge-inbu">? inbu</span>.</div>
         <div class="copy-wrap">
           <button id="copyBtn" class="secondary" type="button">Skopiuj wszystkie</button>
           <button id="copyTaskBtn" class="secondary" type="button">Skopiuj tylko task</button>
@@ -393,7 +393,7 @@
     const parseNumber=(s)=>{ if(!s) return 0; const t=s.replace(/[^\d\-]/g,''); const n=parseInt(t,10); return isFinite(n)?n:0; };
     const shuffle=(arr)=>{ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 
-    /* ====== MAPA NAZW → ID ładowana z item_id.json (obok HTML) ====== */
+    /* ====== MAPA NAZW › ID ładowana z item_id.json (obok HTML) ====== */
     let NAME_TO_ID = new Map();
     let nameToIdLoaded = false;
 
@@ -737,15 +737,15 @@
       lines.push(`Balance: ${balance} gp`);
       lines.push(`Individual balance: ${individual} gp`);
       lines.push(`Loot per hour: ${lph} gp`);
-      lines.push('Damage'); dmgItems.forEach(x=>lines.push(`‣ ${x}`));
-      lines.push('Healing'); healItems.forEach(x=>lines.push(`‣ ${x}`));
+      lines.push('Damage'); dmgItems.forEach(x=>lines.push(`? ${x}`));
+      lines.push('Healing'); healItems.forEach(x=>lines.push(`? ${x}`));
       lines.push('Splitting Instructions');
       if(splitLines.length===0) lines.push('— brak transferów, każdy ma docelowy udział.');
       else splitLines.forEach(x=>lines.push(x));
       lines.push(footer);
 
       navigator.clipboard.writeText(lines.join('\n'))
-        .then(()=>showToast('Skopiowano cały wynik ✅','success'))
+        .then(()=>showToast('Skopiowano cały wynik ?','success'))
         .catch(()=>showToast('Nie udało się skopiować','error'));
     }
     function copyPartyTransfersOnly(){
@@ -770,7 +770,7 @@
       }
 
       navigator.clipboard.writeText(lines.join('\n'))
-        .then(()=>showToast('Skopiowano tylko transfery ✅','success'))
+        .then(()=>showToast('Skopiowano tylko transfery ?','success'))
         .catch(()=>showToast('Nie udało się skopiować transferów','error'));
     }
 
@@ -784,8 +784,8 @@
         tdName.textContent=name;
 
         const isTask=matchedTask.get(name); const isInbu=matchedInbu.get(name);
-        if(isTask){const b=document.createElement('span'); b.className='badge'; b.textContent='✓ task'; tdName.appendChild(b);}
-        if(isInbu){const b=document.createElement('span'); b.className='badge-inbu'; b.textContent='★ inbu'; tdName.appendChild(b);}
+        if(isTask){const b=document.createElement('span'); b.className='badge'; b.textContent='? task'; tdName.appendChild(b);}
+        if(isInbu){const b=document.createElement('span'); b.className='badge-inbu'; b.textContent='? inbu'; tdName.appendChild(b);}
 
         const cats=(matchedCats && matchedCats.get(name))||[];
         if(isTask && cats.length){
@@ -810,7 +810,7 @@
       }
       for(const p of pairsSorted){
         const block=document.createElement('div'); block.className='pair-block';
-        const title=document.createElement('div'); title.className='pair-title'; title.textContent=`${p.from} → ${p.to}`; block.appendChild(title);
+        const title=document.createElement('div'); title.className='pair-title'; title.textContent=`${p.from} › ${p.to}`; block.appendChild(title);
         const ul=document.createElement('ul'); ul.className='pair-items';
         p.items.forEach(it=>{const li=document.createElement('li'); li.textContent=`${it.qty}x ${it.name}`; ul.appendChild(li);});
         block.appendChild(ul); container.appendChild(block);
@@ -903,7 +903,7 @@
       }
       const out=lines.join('\n');
       navigator.clipboard.writeText(out).then(()=>{
-        const btn=qs(btnId); const old=btn.textContent; btn.textContent='Skopiowano ✅'; setTimeout(()=>btn.textContent=old,1500);
+        const btn=qs(btnId); const old=btn.textContent; btn.textContent='Skopiowano ?'; setTimeout(()=>btn.textContent=old,1500);
         showToast('Skopiowano transfery','success');
       }).catch(()=>showToast('Nie udało się skopiować transferów','error'));
     }
@@ -930,7 +930,7 @@
       }
       const out=lines.join('\n');
       navigator.clipboard.writeText(out).then(()=>{
-        const btn=qs('copyRemaBtn'); const old=btn.textContent; btn.textContent='Skopiowano ✅'; setTimeout(()=>btn.textContent=old,1500);
+        const btn=qs('copyRemaBtn'); const old=btn.textContent; btn.textContent='Skopiowano ?'; setTimeout(()=>btn.textContent=old,1500);
         showToast('Skopiowano resztki','success');
       }).catch(()=>showToast('Nie udało się skopiować resztek','error'));
     }
@@ -946,7 +946,7 @@
       const out=lines.join('\n');
       navigator.clipboard.writeText(out).then(()=>{
         const btnId=filterType==='task'?'copyTaskBtn':filterType==='inbu'?'copyInbuBtn':'copyBtn';
-        const btn=qs(btnId); const old=btn.textContent; btn.textContent='Skopiowano ✅'; setTimeout(()=>btn.textContent=old,1500);
+        const btn=qs(btnId); const old=btn.textContent; btn.textContent='Skopiowano ?'; setTimeout(()=>btn.textContent=old,1500);
         showToast('Skopiowano linie','success');
       }).catch(()=>showToast('Nie udało się skopiować linii','error'));
     }
@@ -956,7 +956,7 @@
       const btn=qs('toggleRemaBtn'); const lbl=qs('remaModeLabel'); const title=qs('remaTitle');
       if(remainderPriorityEnabled){
         btn.classList.add('on'); btn.textContent='Rozdziel resztki: WŁ.';
-        lbl.textContent='Tryb przydziału reszt: WŁ. — droppers (po 1) → losowo.'; lbl.classList.remove('warn');
+        lbl.textContent='Tryb przydziału reszt: WŁ. — droppers (po 1) › losowo.'; lbl.classList.remove('warn');
         title.textContent='Resztki (podzielone)';
       } else {
         btn.classList.remove('on'); btn.textContent='Rozdziel resztki: WYŁ.';
@@ -1616,7 +1616,7 @@ Zaogun Shoulderplates
       else { wrap.classList.remove('open'); btn.textContent = 'Pokaż wynik podsumowania'; }
     }
 
-    /* ====== Brakujące ID — mapowanie norm → ładne etykiety (Task + Inbu) ====== */
+    /* ====== Brakujące ID — mapowanie norm › ładne etykiety (Task + Inbu) ====== */
     function buildNormToLabelMap() {
       const map = new Map();
       // Task z textarea
@@ -1694,7 +1694,7 @@ Zaogun Shoulderplates
           console.warn('Brak ID dla (etykiety):', missingLabels);
 
           navigator.clipboard.writeText(missingLabels.join('\n'))
-            .then(() => showToast('Brakujące pozycje skopiowano do schowka ✅', 'success'))
+            .then(() => showToast('Brakujące pozycje skopiowano do schowka ?', 'success'))
             .catch(() => {});
         } else {
           showToast(`Utworzono itemprices.json — pozycje: ${count}`, count > 0 ? 'success' : 'info');
@@ -1786,14 +1786,14 @@ Zaogun Shoulderplates
         qs('copyPartyAllBtn').addEventListener('click', copyPartyAll);
         qs('copyPartyTransfersBtn').addEventListener('click', copyPartyTransfersOnly);
 
-        // Task textarea → checklist + auto-save
+        // Task textarea › checklist + auto-save
         qs('taskListRashid').addEventListener('input', ()=>{renderChecklist('taskListRashid','taskListRashidChecks','task_rashid'); saveSettingsLocal();});
         qs('taskListYasir' ).addEventListener('input', ()=>{renderChecklist('taskListYasir','taskListYasirChecks','task_yasir'); saveSettingsLocal();});
         qs('taskListFlint' ).addEventListener('input', ()=>{renderChecklist('taskListFlint','taskListFlintChecks','task_flint'); saveSettingsLocal();});
         qs('taskListOther1').addEventListener('input', ()=>{renderChecklist('taskListOther1','taskListOther1Checks','task_other1'); saveSettingsLocal();});
         qs('taskListOther2').addEventListener('input', ()=>{renderChecklist('taskListOther2','taskListOther2Checks','task_other2'); saveSettingsLocal();});
 
-        // Tworzenie itemprices.json → ładowanie ID na żądanie
+        // Tworzenie itemprices.json › ładowanie ID na żądanie
         qs('createItemPricesBtn').addEventListener('click', () => { createItemPricesFile(); });
 
         // Zmiany checkboxów -> auto-save
@@ -1899,7 +1899,7 @@ Zaogun Shoulderplates
         summarize();
       }catch(err){
         console.error('Init error:', err);
-        showToast('Błąd inicjalizacji.});
+        showToast('Błąd inicjalizacji.'});
   </script>
 </body>
 </html>
